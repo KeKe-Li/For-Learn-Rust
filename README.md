@@ -31,3 +31,35 @@ Rust 运行在以下操作系统上：Linux, OS X, Windows, FreeBSD, Android, iO
 简单提一下 Rust 的历史。Rust 最早是 Mozilla 雇员 Graydon Hoare 的一个个人项目，从 2009 年开始，得到了 Mozilla 研究院的支助，2010 年项目对外公布。2010 ～2011 年间实现的自举。从此以后，Rust 经历了巨大的设计变化和反复（历程极其艰辛），终于在 2015 年 5 月 15日发布了 1.0 版。在这个研发过程中，Rust 建立了一个强大活跃的社区，形成了一整套完善稳定的项目贡献机制（这是真正的可怕之处）。Rust 现在由 [Rust项目开发者社区维护](https://github.com/rust-lang/rust)。
 
 自 15 年 5 月 1.0 发布以来，涌现了大量优秀的项目（可以 github 上搜索 Rust 查找），大公司也逐渐积极参与 Rust 的应用开发，以及回馈开源社区。
+
+#### Rust 安装 
+
+Rust 支持主流的操作系统，Linux，Mac 和 windows, 这里我用的是Mac OS系统，以Mac OS系统为例进行安装。
+
+Rust 为 mac 用户提供了两种安装方式：
+
+1、直接下载安装包：
+
+直接下载安装包的话需要检查一下你当前操作系统是64位还是32位，分别下载对应的安装包。 查看操作系统请在终端执行如下命令:
+
+直接下载安装包的话需要检查一下你当前操作系统是64位还是32位，分别下载对应的安装包。 查看操作系统请在终端执行如下命令:
+
+```bash
+> uname -a
+Darwin MacBook-Pro.local 19.6.0 Darwin Kernel Version 19.6.0: Tue Nov 10 00:10:30 PST 2020; root:xnu-6153.141.10~1/RELEASE_X86_64 x86_64
+```
+
+可以看到是x86_64是64的系统，可以在这里下载[rust安装包](https://static.rust-lang.org/dist/rust-1.5.0-x86_64-apple-darwin.pkg)。
+
+2、命令行一键安装：
+
+Rust 提供简单的一键安装，命令如下：
+
+```bash
+> curl -sSf https://static.rust-lang.org/rustup.sh | sh
+```
+
+此过程，有可能需要你输入几次密码.
+
+你只需打开你的命令行执行如上代码就可以了。（注意，你可能需要一个梯子，否则会遇到一些类似Could not resolve host: static.rust-lang.org的错误）
+
