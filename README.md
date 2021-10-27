@@ -13,3 +13,21 @@ Rust 中有诸如 if else 和循环语句 for 和 while 的通用控制结构。
 Rust 使用实现（implementation）、特征（trait）和结构化类型（structured type）而不是类（class）。这点，与基于继承的OO语言 C++, Java 有相当大的差异。而跟 Ocaml, Haskell 这类函数式语言更加接近。
 
 Rust 做到了内存安全而无需 .NET 和 Java 编程语言中实现自动垃圾收集器的开销，这是通过所有权/借用机制、生命周期、以及类型系统来达到的。
+
+下面是一个代码片段的例子，经典的 Hello Rust 应用：
+
+fn main() {
+  println!("hello, Rust");
+}
+
+影响了 Rust 的流行的编程语言包括 C, C++, C#, Erlang, Haskell, OCaml, Ruby, Scheme 和 Swift 等等。Rust 也影响了 C# 7, Elm, Idris, Swift。
+
+Rust 提供了安装程序，你只需要从官网下载并在相应的操作系统上运行安装程序。安装程序支持 Windows、Mac 和 Linux（通过脚本）上的32位和64位 CPU 体系架构，适用 Apache License 2.0 或者 MIT Licenses。
+
+Rust 运行在以下操作系统上：Linux, OS X, Windows, FreeBSD, Android, iOS。
+
+简单提一下 Rust 的历史。Rust 最早是 Mozilla 雇员 Graydon Hoare 的一个个人项目，从 2009 年开始，得到了 Mozilla 研究院的支助，2010 年项目对外公布。2010 ～2011 年间实现的自举。从此以后，Rust 经历了巨大的设计变化和反复（历程极其艰辛），终于在 2015 年 5 月 15日发布了 1.0 版。在这个研发过程中，Rust 建立了一个强大活跃的社区，形成了一整套完善稳定的项目贡献机制（这是真正的可怕之处）。Rust 现在由 Rust 项目开发者社区（https://github.com/rust-lang/rust ）维护。
+
+自 15 年 5 月 1.0 发布以来，涌现了大量优秀的项目（可以 github 上搜索 Rust 查找），大公司也逐渐积极参与 Rust 的应用开发，以及回馈开源社区。
+
+本书（RustPrimer）旨在为中文 Rustaceans 初学者提供一个正确、最新、易懂的中文教程。本书会一直完善跟进，永不停歇。
