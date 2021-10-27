@@ -59,10 +59,17 @@ Rust 提供简单的一键安装，命令如下：
 > curl -sSf https://static.rust-lang.org/rustup.sh | sh
 ```
 
-此过程，有可能需要你输入几次密码.
+3. 使用mac os系统自带的brew安装
 
-你只需打开你的命令行执行如上代码就可以了。（注意，你可能需要一个梯子，否则会遇到一些类似Could not resolve host: static.rust-lang.org的错误）
+安装Rust不要直接Rust语言本身，例如使用`brew install rust`就只是安装了rust语言本身而已，应该安装的是rustup,rustup是rust官方版本的管理工具，是安装rust的首选。
 
+它的主要特点是：
+
+* 管理Rust二进制文件
+* 配置Rust工具链
+* 管理Rust相关组件
+* 只依赖bash，curl和常见的unix工具
+* 支持多平台
 
 3. 验证安装：
 
@@ -83,3 +90,14 @@ rustc 1.53.0
 如果你不想安装 Rust 在你的电脑上，但是你还是像尝试一下 rust，那么这里有一个在线的环境：http://play.rust-lang.org/ 。
 
 中国科学技术大学镜像源包含 [rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
+
+
+#### Rust使用工具
+
+在使用Rust开发过程中常常是用到的工具有`rustc`, `rust-src`,`cargo`，这些都可以使用rustup进行管理。
+
+* cargo是Rust项目管理的工具，提供了一系列的工具，从项目的建立，构建到测试，运行到部署，都为Rust项目的管理提供尽可能完成的手段。
+
+* rustc是rust语言的编译器。
+
+* rust-src是rust标准库。
