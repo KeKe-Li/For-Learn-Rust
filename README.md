@@ -16,9 +16,11 @@ Rust 做到了内存安全而无需 .NET 和 Java 编程语言中实现自动垃
 
 下面是一个代码片段的例子，经典的 Hello Rust 应用：
 
+```
 fn main() {
   println!("hello, Rust");
 }
+```
 
 影响了 Rust 的流行的编程语言包括 C, C++, C#, Erlang, Haskell, OCaml, Ruby, Scheme 和 Swift 等等。Rust 也影响了 C# 7, Elm, Idris, Swift。
 
