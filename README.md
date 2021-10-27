@@ -78,8 +78,8 @@ rustc 1.53.0
 
 这里需要注意下：
 
-除了稳定版之外，Rust 还提供了 Beta 和 Nightly 版本，[下载地址](https://www.rust-lang.org/zh-CN/other-installers.html)
+除了稳定版之外，Rust 还提供了 Beta 和 Nightly 版本，[下载地址](https://www.rust-lang.org/zh-CN/other-installers.html)。
 
-如果你不想安装 Rust 在你的电脑上，但是你还是像尝试一下 rust，那么这里有一个在线的环境：http://play.rust-lang.org/
+如果你不想安装 Rust 在你的电脑上，但是你还是像尝试一下 rust，那么这里有一个在线的环境：http://play.rust-lang.org/ 。
 
-中国科学技术大学镜像源包含 rust-static，梯子暂时出问题的同学可以尝试从这里下载编译器；除此之外，还有 Crates 源，详见这里的说明。
+中国科学技术大学镜像源包含 [rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
