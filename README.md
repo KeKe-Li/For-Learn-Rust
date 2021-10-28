@@ -89,7 +89,7 @@ rustc 1.53.0
 
 如果你不想安装 Rust 在你的电脑上，但是你还是像尝试一下 rust，那么这里有一个在线的环境：http://play.rust-lang.org/ 。
 
-中国科学技术大学镜像源包含 [rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
+中国科学技术大学镜像源包含[rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
 
 
 #### Rust使用工具
