@@ -68,7 +68,7 @@ Rust 提供简单的一键安装，命令如下：
 * 管理Rust二进制文件
 * 配置Rust工具链
 * 管理Rust相关组件
-* 只依赖bash，curl和常见的unix工具
+* 只依赖bash,curl和常见的unix工具
 * 支持多平台
 
 3. 验证安装：
@@ -101,3 +101,7 @@ rustc 1.53.0
 * rustc是rust语言的编译器。
 
 * rust-src是rust标准库。
+
+
+#### Rust学习篇
+
