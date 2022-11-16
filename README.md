@@ -102,6 +102,20 @@ rustc 1.53.0
 
 * rust-src是rust标准库。
 
+此外在安装 Rustup 时，也会安装 Rust构建工具和包管理器的最新稳定版，即 `Cargo`。
+
+Cargo 可以做很多事情：
+
+```markdown
+> cargo build  // 可以构建项目
+> cargo run   // 可以运行项目
+> cargo test  // 可以测试项目
+> cargo doc  // 可以为项目构建文档
+> cargo publish // 可以将库发布到 crates.io。
+```
+Cargo 安装依赖，使用 cargo 可以方便的安装依赖，可以在 `crates.io`（即 Rust 包的仓库）中找到所有类别的库。
+
+在 Rust 中，通常把包称作“crates”。
 
 #### Rust学习篇
 
