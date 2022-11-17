@@ -121,7 +121,6 @@ Cargo 安装依赖，使用 cargo 可以方便的安装依赖，可以在 `crate
 
 Rust这块主要从基础数据结构，语法和使用，然后结合damo一起来学习！
 
-
 #### 参考
 
 * [rust权威](https://course.rs/basic/variable.html)
