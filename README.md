@@ -115,7 +115,7 @@ Cargo 可以做很多事情：
 ```
 Cargo 安装依赖，使用 cargo 可以方便的安装依赖，可以在 `crates.io`（即 Rust 包的仓库）中找到所有类别的库。
 
-在 Rust 中，通常把包称作“crates”。
+在 Rust中，通常把包称作“crates”。
 
 #### Rust学习篇
 
