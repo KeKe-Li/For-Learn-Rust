@@ -117,7 +117,94 @@ Cargo 安装依赖，使用 cargo 可以方便的安装依赖，可以在 `crate
 
 在 Rust中，通常把包称作“crates”。
 
-#### Rust学习篇
+cargo在创建项目的时候，cargo 默认就创建 bin 类型的项目，Rust 项目主要分为两个类型：bin 和 lib，前者是一个可运行的项目，后者是一个依赖库项目。
+
+#### 运行项目
+
+有两种方式可以运行项目：
+
+* cargo run
+```markdown
+> sudo cargo run main.rs
+    Blocking waiting for file lock on package cache
+    Finished dev [unoptimized + debuginfo] target(s) in 48.02s
+     Running `/Users/keke/rust/step/target/debug/step main.rs`
+hello rust
+```
+
+`cargo run` 对项目进行编译，然后再运行，实际它上等同于运行了两个指令,等同于手动编译运行。
+
+* 手动编译和运行项目
+```markdown
+> cargo build
+    Finished dev [unoptimized + debuginfo] target(s) in 0.00s
+```
+运行:
+```markdown
+> /target/debug/hello_rust
+hello, rust!
+```
+从这里可以看出我们运行的是 debug 模式，在这种模式下，代码的编译速度会非常快，但是呢运行速度就慢了. 原因是，在 debug 模式下，Rust 编译器不会做任何的优化，只为了尽快的编译完成，让你的开发流程更加顺畅。
+
+所以呢我们也可以选择:
+```markdown
+cargo run --release
+cargo build --release
+```
+试着运行一下我们高性能的 release 程序：
+```markdown
+> ./target/release/hello_rust
+hello, rust!
+```
+
+#### cargo check
+
+`cargo check` 是我们在代码开发过程中最常用的命令，它的作用很简单：快速的检查一下代码能否编译通过。因此该命令速度会非常快，能节省大量的编译时间。
+```markdown
+> cargo check         
+    Checking hello_rust v0.1.0 (/Users/keke/rust/hello_rust)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.43s
+```
+
+#### Cargo.toml 和 Cargo.lock
+
+`Cargo.toml` 和 `Cargo.lock` 是 cargo 的核心文件，rust的所有活动均基于这两个配置。
+
+`Cargo.toml` 是 cargo 特有的项目数据描述文件。它存储了项目的所有元配置信息，如果 Rust 开发者希望 Rust 项目能够按照期望的方式进行构建、测试和运行，那么，必须按照合理的方式构建 `Cargo.toml`。
+
+`Cargo.lock` 文件是 cargo 工具根据同一项目的 toml 文件生成的项目依赖详细清单，因此我们一般不用修改它，只需要对着 Cargo.toml 文件添加就好。
+
+#### package 配置段落
+
+package 中记录了项目的描述信息，典型的如下：
+```markdown
+[package]
+name = "hello_rust"
+version = "0.1.0"
+edition = "202w"
+```
+`name` 字段定义了项目名称，
+`version` 字段定义当前版本，新项目默认是 0.1.0，edition 字段定义了我们使用的 Rust 大版本。
+
+定义项目依赖
+使用 cargo 工具的最大优势就在于，能够对该项目的各种依赖项进行方便、统一和灵活的管理。
+
+在 `Cargo.toml` 中，主要通过各种依赖段落来描述该项目的各种依赖项：
+
+* 基于 Rust 官方仓库 `crates.io`，通过版本说明来描述
+* 基于项目源代码的 git 仓库地址，通过 URL 来描述
+* 基于本地项目的绝对路径或者相对路径，通过类 Unix 模式的路径来描述
+
+具体如下:
+```markdown
+[dependencies]
+rand = "0.3"
+hammer = { version = "0.5.0"}
+color = { git = "https://github.com/bjz/color-rs" }
+geometry = { path = "crates/geometry" }
+```
+
+#### Rust实战开始
 
 Rust这块主要从基础数据结构，语法和使用，然后结合damo一起来学习！
 
