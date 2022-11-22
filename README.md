@@ -204,9 +204,33 @@ color = { git = "https://github.com/bjz/color-rs" }
 geometry = { path = "crates/geometry" }
 ```
 
+#### 依赖包下载代理
+
+Rust依赖库的地址是 crates.io，是由 Rust 官方搭建的镜像下载和管理服务。
+
+解决下载缓慢有两种方式:
+
+* 开启命令行或者全局翻墙，让`rust-analyzer 插件自动拉取:
+```markdown
+export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7891
+```
+
+* 修改 Rust 的下载镜像为国内的镜像地址
+
+在 `$HOME/.cargo/config.toml` 添加以下内容：
+```markdown
+[source.crates-io]
+replace-with = 'ustc'
+
+[source.ustc]
+registry = "git://mirrors.ustc.edu.cn/crates.io-index"
+```
+首先，创建一个新的镜像源 `[source.ustc]`，然后将默认的 `crates-io` 替换成新的镜像源: `replace-with = 'ustc'`。
+
 #### Rust实战开始
 
 Rust这块主要从基础数据结构，语法和使用，然后结合damo一起来学习！
+
 
 #### 参考
 
