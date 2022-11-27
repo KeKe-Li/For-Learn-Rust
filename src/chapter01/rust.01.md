@@ -38,3 +38,23 @@ Rust 是一门全新的语言，它可能会带给你前所未有的体验，提
 对于蛇形命名法（包括全大写的 SCREAMING_SNAKE_CASE），除了最后一部分，其它部分的词语都不能由单个字母组成： `btree_map` 而不是 `b_tree_map`.
 
 包名不应该使用 `-rs` 或者 `-rust` 作为后缀，因为每一个包都是 Rust 写的，因此这种多余的注释其实没有任何意义。
+
+除此之外，类型转换要遵守 `as_`，`to_`，`into_` 命名惯例(C-CONV).
+
+类型转换应该通过方法调用的方式实现，其中的前缀规则如下：
+
+方法前缀	性能开销	所有权改变
+|as_	| Free	    | borrowed -> borrowed |
+|-------|-----------|----------------------|
+|to_	| Expensive | borrowed -> borrowed borrowed -> owned (non-Copy types) owned -> owned (Copy types)|
+|into_	| Variable	| owned -> owned (non-Copy types)|
+
+例如：
+
+`str::as_bytes()` 把 str 变成 UTF-8 字节数组，性能开销是 0。输入是一个借用的 &str，输出也是一个借用的 &str
+`Path::to_str` 会执行一次昂贵的 UTF-8 字节数组检查，输入和输出都是借用的。对于这种情况，如果把方法命名为 `as_str` 是不正确的，因为这个方法的开销还挺大.
+`str::to_lowercase()` 在调用过程中会遍历字符串的字符，且可能会分配新的内存对象。输入是一个借用的 str，输出是一个有独立所有权的 String.
+`String::into_bytes()` 返回 String 底层的 `Vec<u8>` 数组，转换本身是零消耗的。该方法获取 String 的所有权，然后返回一个新的有独立所有权的 `Vec<u8>`
+当一个单独的值被某个类型所包装时，访问该类型的内部值应通过 `into_inner()` 方法来访问。例如将一个缓冲区值包装为 BufReader 类型，还有 `GzDecoder`、`AtomicBool` 等，都是这种类型。
+
+如果 mut 限定符在返回类型中出现，那么在命名上也应该体现出来。例如，`Vec::as_mut_slice` 就说明它返回了一个 mut 切片，在这种情况下 `as_mut_slice` 比 `as_slice_mut` 更适合。
