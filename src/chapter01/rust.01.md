@@ -57,6 +57,7 @@ Rust 是一门全新的语言，它可能会带给你前所未有的体验，提
 `String::into_bytes()` 返回 String 底层的 `Vec<u8>` 数组，转换本身是零消耗的。该方法获取 String 的所有权，然后返回一个新的有独立所有权的 `Vec<u8>`
 当一个单独的值被某个类型所包装时，访问该类型的内部值应通过 `into_inner()` 方法来访问。例如将一个缓冲区值包装为 BufReader 类型，还有 `GzDecoder`、`AtomicBool` 等，都是这种类型。
 
+
 如果 mut 限定符在返回类型中出现，那么在命名上也应该体现出来。例如，`Vec::as_mut_slice` 就说明它返回了一个 mut 切片，在这种情况下 `as_mut_slice` 比 `as_slice_mut` 更适合。
 
 #### 变量和常量之间的差异
