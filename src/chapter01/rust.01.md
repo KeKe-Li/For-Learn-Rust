@@ -454,7 +454,7 @@ For more information about this error, try `rustc --explain E0308`.
 
 最后提下最特殊的函数，永不返回的`发散函数 !`
 
-当用 ! 作函数返回类型的时候，表示该函数永不返回( diverge function )，特别的，这种语法往往用做会导致程序崩溃的函数：
+当用 `!` 作函数返回类型的时候，表示该函数永不返回( diverge function )，特别的，这种语法往往用做会导致程序崩溃的函数：
 ```rust 
 fn its_end() -> ! {
   panic!("这样就崩溃了！");
