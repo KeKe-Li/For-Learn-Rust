@@ -275,3 +275,188 @@ Rust 的数值类型和运算跟其他语言较为相似，但是实际上，除
 * 类型转换必须是显式的. Rust 永远也不会偷偷把你的 `16bit` 整数转换成 `32bit` 整数
 * Rust 的数值上可以使用方法. 例如你可以用以下方法来将 `13.14` 取整：`13.14_f32.round()`，在这里我们使用了类型后缀，因为编译器需要知道 13.14 的具体类型
 
+在大多数语言中，要么只支持声明可变的变量，要么只支持声明不可变的变量( 例如函数式语言 )，前者为编程提供了灵活性，后者为编程提供了安全性，而 Rust 比较开放的一点，选择了两者我都要，既要灵活性又要安全性。
+
+下面看看，Rust命名规范：
+
+基本的 Rust 命名规范在 `RFC 430` 中有描述。
+
+通常，对于 type-level 的构造 Rust 倾向于使用驼峰命名法，而对于 value-level 的构造使用蛇形命名法。详情如下：
+|           条目                           |            惯例                             |
+|-----------------------------------------|--------------------------------------------|
+|       包 Crates	                      |  unclear                                   |
+|       模块 Modules	                      |  snake_case                                |
+|       类型 Types	                      |  UpperCamelCase                            |
+|       特征 Traits	                      |  UpperCamelCase                            |                                            
+|       枚举 Enumerations	              |  UpperCamelCase                            |         
+|       结构体 Structs	                  |  UpperCamelCase                            |
+|       函数 Functions	                  |  snake_case                                |
+|       方法 Methods	                      |  snake_case                                |
+|       通用构造器 General constructors	  |  new or with_more_details                  |
+|       转换构造器 Conversion constructors  |	 from_some_other_type                      |
+|       宏 Macros	                      |  snake_case!                               |
+|       局部变量 Local variables	          |  snake_case                                |
+|       静态类型 Statics	                  |  SCREAMING_SNAKE_CASE                      |
+|       常量 Constants	                  |  SCREAMING_SNAKE_CASE                      |
+|       类型参数 Type parameters	          |  UpperCamelCase，通常使用一个大写字母: T       |
+|       生命周期 Lifetimes	              |  通常使用小写字母: 'a，'de，'src               |
+|       Features	                      |  unclear but see C-FEATURE                 |
+
+对于驼峰命名法，复合词的缩略形式我们认为是一个单独的词语，所以只对首字母进行大写：使用 Uuid 而不是 UUID，Usize 而不是 USize，Stdin 而不是 StdIn。
+
+对于蛇形命名法，缩略词用全小写：`is_start`。
+
+对于蛇形命名法（包括全大写的 SCREAMING_SNAKE_CASE），除了最后一部分，其它部分的词语都不能由单个字母组成： `btree_map` 而不是 `b_tree_map`.
+
+包名不应该使用 `-rs` 或者 `-rust` 作为后缀，因为每一个包都是 Rust 写的，因此这种多余的注释其实没有任何意义。
+
+除此之外，类型转换要遵守 `as_`，`to_`，`into_` 命名惯例(C-CONV).
+
+类型转换应该通过方法调用的方式实现，其中的前缀规则如下：
+
+方法前缀	性能开销	所有权改变
+|as_	| Free	    | borrowed -> borrowed |
+|-------|-----------|----------------------|
+|to_	| Expensive | borrowed -> borrowed borrowed -> owned (non-Copy types) owned -> owned (Copy types)|
+|into_	| Variable	| owned -> owned (non-Copy types)|
+
+例如：
+
+`str::as_bytes()` 把 str 变成 UTF-8 字节数组，性能开销是 0。输入是一个借用的 &str，输出也是一个借用的 &str
+`Path::to_str` 会执行一次昂贵的 UTF-8 字节数组检查，输入和输出都是借用的。对于这种情况，如果把方法命名为 `as_str` 是不正确的，因为这个方法的开销还挺大.
+`str::to_lowercase()` 在调用过程中会遍历字符串的字符，且可能会分配新的内存对象。输入是一个借用的 str，输出是一个有独立所有权的 String.
+`String::into_bytes()` 返回 String 底层的 `Vec<u8>` 数组，转换本身是零消耗的。该方法获取 String 的所有权，然后返回一个新的有独立所有权的 `Vec<u8>`
+当一个单独的值被某个类型所包装时，访问该类型的内部值应通过 `into_inner()` 方法来访问。例如将一个缓冲区值包装为 BufReader 类型，还有 `GzDecoder`、`AtomicBool` 等，都是这种类型。
+
+如果 mut 限定符在返回类型中出现，那么在命名上也应该体现出来。例如，`Vec::as_mut_slice` 就说明它返回了一个 mut 切片，在这种情况下 `as_mut_slice` 比 `as_slice_mut` 更适合。
+
+
+#### 语句和表达式
+
+* 语句:
+
+在函数返回中会经常出现表达式，这里需要弄明白一些。
+
+Rust 的函数体是由一系列语句组成，最后由一个表达式来返回值，例如：
+```rust
+fn add_with_extra(x: i32, y: i32) -> i32 {
+    let x = x + 1; // 语句
+    let y = y + 5; // 语句
+    x + y // 表达式
+}
+```
+
+语句会执行一些操作但是不会返回一个值，而表达式会在求值后返回一个值，因此在上述函数体的三行代码中，前两行是语句，最后一行是表达式。
+
+对于 Rust 语言而言，这种基于语句（statement）和表达式（expression）的方式是非常重要的，需要能明确的区分这两个概念, 但是对于很多其它语言而言，这两个往往无需区分。基于表达式是函数式语言的重要特征，表达式总要返回值。
+
+其实，在此之前，我们已经多次使用过语句和表达式。
+
+* 表达式:
+
+表达式会进行求值，然后返回一个值。例如 5 + 6，在求值后，返回值 11，因此它就是一条表达式。
+
+表达式可以成为语句的一部分，例如 `let y = 6` 中，6 就是一个表达式，它在求值后返回一个值 6（有些反直觉，但是确实是表达式）。
+
+调用一个函数是表达式，因为会返回一个值，调用宏也是表达式，用花括号包裹最终返回一个值的语句块也是表达式，总之，能返回值，它就是表达式:
+
+```rust 
+fn main() {
+    let y = {
+        let x = 3;
+        x + 1
+    };
+
+    println!("The value of y is: {}", y);
+}
+```
+
+#### 函数
+
+声明函数的关键字 fn ,函数名 add()，参数 i 和 j，参数类型和返回值类型都是 i32.
+
+```rust
+ fn add(i: i32, j: i32) -> i32 {
+   i + j
+ }
+ ```
+
+<p align="center">
+<img width="100%" align="center" src="src/images/1.png" />
+</p>
+
+函数需要注意的:
+* 函数名和变量名使用蛇形命名法(snake case)，例如 `fn add_two() -> {}`
+* 函数的位置可以随便放，Rust 不关心我们在哪里定义了函数，只要有定义即可
+* 每个函数参数都需要标注类型
+
+
+#### 函数返回
+
+函数的返回值就是函数体最后一条表达式的返回值，当然我们也可以使用 return 提前返回，下面的函数使用最后一条表达式来返回一个值：
+
+```rust
+fn add_two(i: i32, j:i32) ->i32{
+    return i+j
+}
+```
+
+#### Rust中的特殊返回类型
+
+无返回值()
+
+例如单元类型 ()，是一个零长度的元组。它没啥作用，但是可以用来表达一个函数没有返回值：
+
+* 函数没有返回值，那么返回一个 ()
+* 通过 `;` 结尾的表达式返回一个 ()
+
+例如下面的 report 函数会隐式返回一个 ()：
+```rust 
+use std::fmt::Debug;
+
+fn report<T: Debug>(item: T) {
+  println!("{:?}", item);
+
+}
+```
+
+与上面的函数返回值相同，但是下面的函数显式的返回了 ()：
+
+```rust 
+fn clean(text: &mut String) -> () {
+  *text = String::from("");
+}
+```
+
+在实际编程中，你会经常在错误提示中看到该 () 的身影出没，假如你的函数需要返回一个 u32 值，但是如果你不幸的以 `x+y;` 的方式作为函数的最后一行代码，就会报错：
+
+
+```rust
+fn add(x:i32,y:i32) -> i32 {
+    x + y; // 语句不具备返回值条件
+}
+```
+运行之后:
+```bash 
+error[E0308]: mismatched types // 类型不匹配
+   --> src/main.rs:13:25
+    |
+113 | fn add(i: i32, j:i32) ->i32{
+    |    ---                  ^^^ expected `i32`, found `()`
+    |    |
+    |    implicitly returns `()` as its body has no tail or `return` expression
+114 |     i+j;
+    |        - help: remove this semicolon
+
+For more information about this error, try `rustc --explain E0308`.
+```
+只有表达式能返回值，而 `;` 结尾的是语句，在 Rust 中，一定要严格区分表达式和语句的区别，这个在其它语言中往往是被忽视的点。
+
+最后提下最特殊的函数，永不返回的`发散函数 !`
+
+当用 `!` 作函数返回类型的时候，表示该函数永不返回( diverge function )，特别的，这种语法往往用做会导致程序崩溃的函数：
+```rust 
+fn its_end() -> ! {
+  panic!("这样就崩溃了！");
+}
+```
