@@ -235,3 +235,11 @@ Rust这块主要从基础数据结构，语法和使用，然后结合damo一起
 #### 参考
 
 * [rust权威](https://course.rs/basic/variable.html)
+* [cargo](https://course.rs/first-try/cargo.html)
+* [Rust语言圣经](https://course.rs/basic/compound-type/intro.html)
+* [rust教程](https://www.yiibai.com/rust/rust-installation.html)
+* [rust社区](https://prev.rust-lang.org/zh-CN/faq.html)
+* [rust库地址](https://doc.rust-lang.org/std/vec/struct.Vec.html)
+* [rustc命令](https://doc.rust-lang.org/rustc/command-line-arguments.html)
+* [Rust程序设计语言](https://kaisery.github.io/trpl-zh-cn/ch07-05-separating-modules-into-different-files.html)
+* [Rust手册](https://rustwiki.org/zh-CN/reference/macros-by-example.html)
