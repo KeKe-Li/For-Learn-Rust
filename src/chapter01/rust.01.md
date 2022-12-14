@@ -382,7 +382,7 @@ fn main() {
  ```
 
 <p align="center">
-<img width="100%" align="center" src="src/images/1.png" />
+    <img width="100%" align="center" src="src/images/1.png" />
 </p>
 
 函数需要注意的:

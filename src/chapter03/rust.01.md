@@ -57,7 +57,7 @@ fn calculate_length(s: &String) -> usize {
 这里，`&` 符号即是引用，它们允许你使用值，但是不获取所有权，如图所示：
 
 <p align="center">
-<img width="100%" align="center" src="src/images/3.png" />
+    <img width="100%" align="center" src="src/images/3.png" />
 </p>
 
 通过 `&s1` 语法，我们创建了一个指向 s1 的引用，但是并不拥有它。因为并不拥有这个值，当引用离开作用域后，其指向的值也不会被丢弃。
