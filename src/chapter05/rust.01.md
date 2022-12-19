@@ -20,7 +20,37 @@ Rust 程序是从上而下顺序执行的，在这个过程中，我们可以通
 
 * 使用 if 来做分支控制
 
+if else 表达式根据条件执行不同的代码分支：
+```rust
+if condition == true {
+    // A...
+} else {
+    // B...
+}
+```
+
 * 使用 else if 来处理多重条件
+
+将 else if 与 if、else 组合在一起实现更复杂的条件分支判断:
+```rust
+fn main() {
+    let n = 4;
+
+    if n % 4 == 0 {
+        println!("number is divisible by 4");
+    } else if n % 6 == 0 {
+        println!("number is divisible by 6");
+    } else if n % 5== 0 {
+        println!("number is divisible by 5");
+    } else {
+        println!("number is not divisible by 4, 6, or 5");
+    }
+}    
+```
+
+程序执行时，会按照自上至下的顺序执行每一个分支判断，一旦成功，则跳出 if 语句块，最终本程序会匹配执行 else if n % 4 == 0 的分支，输出 "number is divisible by 4"。
+
+有一点要注意，就算有多个分支能匹配，也只有第一个匹配的分支会被执行！
 
 循环控制包括:
 
