@@ -112,3 +112,51 @@ fn main() {
 
 * 代码的组织性和内聚性更强，对于代码维护和阅读来说，好处巨大
 
+#### 方法名跟结构体字段名相同
+
+在 Rust 中，允许方法名跟结构体的字段名相同：
+
+```rust
+impl Rectangle {
+    fn width(&self) -> bool {
+        self.width > 0
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+    };
+
+    if rect1.width() {
+        println!("The rectangle has a nonzero width; it is {}", rect1.width);
+    }
+}
+```
+当我们使用 `rect1.width()` 时，Rust 知道我们调用的是它的方法，如果使用 `rect1.width`，则是访问它的字段
+
+一般来说，方法跟字段同名，往往适用于实现 getter 访问器，例如:
+
+```rust
+pub struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    pub fn new(width: u32, height: u32) -> Self {
+        Rectangle { width, height }
+    }
+    pub fn width(&self) -> u32 {
+        return self.width;
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle::new(30, 50);
+
+    println!("{}", rect1.width());
+}
+```
+用这种方式，我们可以把 Rectangle 的字段设置为私有属性，只需把它的 new 和 width 方法设置为公开可见，那么用户就可以创建一个矩形，同时通过访问器 `rect1.width()` 方法来获取矩形的宽度，因为 width 字段是私有的，当用户访问 `rect1.width` 字段时，就会报错。注意在此例中，Self 指代的就是被实现方法的结构体 Rectangle。
