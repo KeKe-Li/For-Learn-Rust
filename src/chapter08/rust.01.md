@@ -51,3 +51,46 @@ fn largest<T>(list: &[T]) -> T {}
 
 总之，我们可以这样理解这个函数定义：函数 largest 有泛型类型 T，它有个参数 list，其类型是元素为 T 的数组切片，最后，该函数返回值的类型也是 T。
 
+实现一个泛型函数实现如下：
+```rust
+fn largest<T>(list: &[T]) -> T {
+    let mut largest = list[0];
+
+    for &item in list.iter() {
+        if item > largest {
+            largest = item;
+        }
+    }
+
+    largest
+}
+
+fn main() {
+    let number_list = vec![34, 50, 25, 100, 65];
+
+    let result = largest(&number_list);
+    println!("The largest number is {}", result);
+
+    let char_list = vec!['y', 'm', 'a', 'q'];
+
+    let result = largest(&char_list);
+    println!("The largest char is {}", result);
+}
+```
+运行后报错：
+```rust
+error[E0369]: binary operation `>` cannot be applied to type `T` // `>`操作符不能用于类型`T`
+ --> src/main.rs:5:17
+  |
+5 |         if item > largest {
+  |            ---- ^ ------- T
+  |            |
+  |            T
+  |
+help: consider restricting type parameter `T` // 考虑对T进行类型上的限制 :
+  |
+1 | fn largest<T: std::cmp::PartialOrd>(list: &[T]) -> T {
+  |             ++++++++++++++++++++++
+```
+
+因为 T 可以是任何类型，但不是所有的类型都能进行比较，因此上面的错误中，编译器建议我们给 T 添加一个类型限制：使用 `std::cmp::PartialOrd` 特征（Trait）对 T 进行限制，该特征的目的就是让类型实现可比较的功能。
