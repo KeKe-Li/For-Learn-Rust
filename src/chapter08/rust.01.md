@@ -94,3 +94,42 @@ help: consider restricting type parameter `T` // 考虑对T进行类型上的限
 ```
 
 因为 T 可以是任何类型，但不是所有的类型都能进行比较，因此上面的错误中，编译器建议我们给 T 添加一个类型限制：使用 `std::cmp::PartialOrd` 特征（Trait）对 T 进行限制，该特征的目的就是让类型实现可比较的功能。
+
+同样的函数，我们在运行`add` 泛型函数.
+```rust
+fn add<T>(a:T, b:T) -> T {
+    a + b
+}
+
+fn main() {
+    println!("add i8: {}", add(2i8, 3i8));
+}
+```
+运行：
+```rust
+error[E0369]: cannot add `T` to `T`
+   --> main1.rs:131:7
+    |
+131 |     a + b
+    |     - ^ - T
+    |     |
+    |     T
+    |
+help: consider restricting type parameter `T`
+    |
+130 | fn add<T: std::ops::Add>(a:T, b:T) -> T {
+    |         +++++++++++++++
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0369`.
+```
+
+不是所有 T 类型都能进行相加操作，因此我们需要用 `std::ops::Add<Output = T>` 对 `T` 进行限制：
+```rust
+fn add<T: std::ops::Add<Output = T>>(a:T, b:T) -> T {
+    a + b
+}
+```
+进行如上修改后，就可以正常运行。
+
