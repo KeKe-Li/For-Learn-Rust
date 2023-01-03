@@ -133,3 +133,60 @@ fn add<T: std::ops::Add<Output = T>>(a:T, b:T) -> T {
 ```
 进行如上修改后，就可以正常运行。
 
+### 结构体中使用泛型
+
+结构体中的字段类型也可以用泛型来定义，我们在下面定义了一个坐标点 Point，它可以存放任何类型的坐标值：
+```rust
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+fn main() {
+    let integer = Point { x: 5, y: 10 };
+    let float = Point { x: 1.0, y: 4.0 };
+}
+```
+
+这里有两点需要特别的注意：
+
+* 提前声明，跟泛型函数定义类似，首先我们在使用泛型参数之前必需要进行声明 `Point<T>`，接着就可以在结构体的字段类型中使用 T 来替代具体的类型
+* `x` 和 y 是相同的类型
+
+第二点非常重要，如果使用不同的类型，那么它会导致下面代码的报错：
+
+```rust
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+fn main() {
+    let p = Point{x: 1, y :1.1};
+}
+```
+
+错误如下：
+```rust
+error[E0308]: mismatched types //类型不匹配
+ --> src/main.rs:7:28
+  |
+7 |     let p = Point{x: 1, y :1.1};
+  |                            ^^^ expected integer, found floating-point number //期望y是整数，但是却是浮点数
+
+```
+
+当把 1 赋值给 x 时，变量 p 的 T 类型就被确定为整数类型，因此 y 也必须是整数类型，但是我们却给它赋予了浮点数，因此导致报错。
+
+如果想让 x 和 y 既能类型相同，又能类型不同，就需要使用不同的泛型参数：
+
+```rust
+struct Point<T,U> {
+    x: T,
+    y: U,
+}
+fn main() {
+    let p = Point{x: 1, y :1.1};
+}
+```
+因此这里需要注意的是，所有的泛型参数都要提前声明：Point<T,U> ! 
