@@ -1,4 +1,4 @@
-### rust 学习
+`### rust 学习
 
 Rust 之所以受欢迎是因为其内存安全性。在以往，内存安全几乎都是通过 GC 的方式实现，但是 GC 会引来性能、内存占用以及 `Stop the world `等问题，在高性能场景和系统编程上是不可接受的，因此 Rust 采用了所有权系统。
 
@@ -36,4 +36,56 @@ pub trait Summary {
 
 接下来，每一个实现这个特征的类型都需要具体实现该特征的相应方法，编译器也会确保任何实现 Summary 特征的类型都拥有与这个签名的定义完全一致的 summarize 方法。
 
+#### 为类型实现特征
+
+因为特征只定义行为看起来是什么样的，因此我们需要为类型实现具体的特征，定义行为具体是怎么样的。
+
+首先来为 Post 和 Weibo 实现 Summary 特征：
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+pub struct Post {
+    pub title: String, // 标题
+    pub author: String, // 作者
+    pub content: String, // 内容
+}
+
+impl Summary for Post {
+    fn summarize(&self) -> String {
+        format!("文章{}, 作者是{}", self.title, self.author)
+    }
+}
+
+pub struct Weibo {
+    pub username: String,
+    pub content: String
+}
+
+impl Summary for Weibo {
+    fn summarize(&self) -> String {
+        format!("{}发表了微博{}", self.username, self.content)
+    }
+}
+```
+
+实现特征的语法与为结构体、枚举实现方法很像：`impl Summary for Post`，读作“为 `Post` 类型实现 `Summary` 特征”，然后在 impl 的花括号中实现该特征的具体方法。
+
+
+接下来就可以在这个类型上调用特征的方法：
+```rust
+fn main() {
+    let post = Post{title: "Rust语言简介".to_string(),author: "Sunface".to_string(), content: "Rust棒极了!".to_string()};
+    let weibo = Weibo{username: "sunface".to_string(),content: "好用".to_string()};
+
+    println!("{}",post.summarize());
+    println!("{}",weibo.summarize());
+}
+```
+
+运行输出：
+```rust
+文章 Rust 语言简介, 作者是Sunface
+sunface发表了微博好用
+```
 
