@@ -98,7 +98,36 @@ sunface发表了微博好用
 
 该规则被称为孤儿规则，可以确保其它人编写的代码不会破坏你的代码，也确保了你不会莫名其妙就破坏了风马牛不相及的代码。
 
+#### 默认实现
 
+你可以在特征中定义具有默认实现的方法，这样其它类型无需再实现该方法，或者也可以选择重载该方法：
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String {
+        String::from("(Read more...)")
+    }
+}
+```
+上面为 Summary 定义了一个默认实现，下面我们编写段代码来测试下：
+```rust
+impl Summary for Post {}
+
+impl Summary for Weibo {
+    fn summarize(&self) -> String {
+        format!("{}发表了微博{}", self.username, self.content)
+    }
+}
+```
+可以看到，Post 选择了默认实现，而 Weibo 重载了该方法，调用和输出如下：
+```rust
+println!("{}",post.summarize());
+println!("{}",weibo.summarize());
+```
+
+```rust
+(Read more...)
+sunface发表了微博好用
+```
 
 
 
