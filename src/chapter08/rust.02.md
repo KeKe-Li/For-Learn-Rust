@@ -129,6 +129,27 @@ println!("{}",weibo.summarize());
 sunface发表了微博好用
 ```
 
+默认实现允许调用相同特征中的其他方法，哪怕这些方法没有默认实现。如此，特征可以提供很多有用的功能而只需要实现指定的一小部分内容。例如，我们可以定义 Summary 特征，使其具有一个需要实现的 summarize_author 方法，然后定义一个 summarize 方法，此方法的默认实现调用 summarize_author 方法：
 
+```rust
+pub trait Summary {
+    fn summarize_author(&self) -> String;
 
+    fn summarize(&self) -> String {
+        format!("(Read more from {}...)", self.summarize_author())
+    }
+}
+```
 
+为了使用 Summary，只需要实现 summarize_author 方法即可：
+
+```rust
+impl Summary for Weibo {
+    fn summarize_author(&self) -> String {
+        format!("@{}", self.username)
+    }
+}
+println!("1 new weibo: {}", weibo.summarize());
+```
+
+`weibo.summarize()` 会先调用 Summary 特征默认实现的 summarize 方法，通过该方法进而调用 Weibo 为 Summary 实现的 `summarize_author` 方法，最终输出：`1 new weibo: (Read more from @horse_ebooks...)`。
