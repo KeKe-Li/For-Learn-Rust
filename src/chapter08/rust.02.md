@@ -152,4 +152,4 @@ impl Summary for Weibo {
 println!("1 new weibo: {}", weibo.summarize());
 ```
 
-`weibo.summarize()` 会先调用 Summary 特征默认实现的 summarize 方法，通过该方法进而调用 Weibo 为 Summary 实现的 `summarize_author` 方法，最终输出：`1 new weibo: (Read more from @horse_ebooks...)`。
+`weibo.summarize()` 会先调用 Summary 特征默认实现的 summarize 方法，通过该方法进而调用 Weibo 为 Summary 实现的 `summarize_author` 方法，最终输出：`1 new weibo: (Read more from keke)`。
