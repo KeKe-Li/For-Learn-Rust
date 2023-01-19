@@ -153,3 +153,49 @@ println!("1 new weibo: {}", weibo.summarize());
 ```
 
 `weibo.summarize()` 会先调用 Summary 特征默认实现的 summarize 方法，通过该方法进而调用 Weibo 为 Summary 实现的 `summarize_author` 方法，最终输出：`1 new weibo: (Read more from keke)`。
+
+#### 使用特征作为函数参数
+
+特征如果仅仅是用来实现方法，那真的有些大材小用，现在我们来讲下，真正可以让特征大放光彩的地方。
+
+现在，先定义一个函数，使用特征作为函数参数：
+
+```rust
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+`impl Summary`，简直太贴切了，故名思义，它的意思是 实现了Summary特征 的 item 参数。
+
+你可以使用任何实现了 Summary 特征的类型作为该函数的参数，同时在函数体内，还可以调用该特征的方法，例如 summarize 方法。具体的说，可以传递 Post 或 Weibo 的实例来作为参数，而其它类如 String 或者 i32 的类型则不能用做该函数的参数，因为它们没有实现 Summary 特征。
+
+#### 特征约束(trait bound)
+
+虽然 impl Trait 这种语法非常好理解，但是实际上它只是一个语法糖：
+
+```rust
+pub fn notify<T: Summary>(item: &T) {
+    println!("Breaking news! {}", item.summarize());
+}
+```
+真正的完整书写形式如上所述，形如 `T: Summary` 被称为特征约束。
+
+在简单的场景下 `impl Trait` 这种语法糖就足够使用，但是对于复杂的场景，特征约束可以让我们拥有更大的灵活性和语法表现能力，例如一个函数接受两个 `impl Summary` 的参数：
+
+```rust
+pub fn notify(item1: &impl Summary, item2: &impl Summary) {}
+```
+
+如果函数两个参数是不同的类型，那么上面的方法很好，只要这两个类型都实现了 Summary 特征即可。但是如果我们想要强制函数的两个参数是同一类型呢？上面的语法就无法做到这种限制，此时我们只能使特征约束来实现：
+
+```rust
+pub fn notify<T: Summary>(item1: &T, item2: &T) {}
+```
+泛型类型 T 说明了 item1 和 item2 必须拥有同样的类型，同时 T: Summary 说明了 T 必须实现 Summary 特征。
+
+
+
+
+
+
+
