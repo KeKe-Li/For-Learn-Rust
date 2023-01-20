@@ -193,6 +193,18 @@ pub fn notify<T: Summary>(item1: &T, item2: &T) {}
 ```
 泛型类型 T 说明了 item1 和 item2 必须拥有同样的类型，同时 T: Summary 说明了 T 必须实现 Summary 特征。
 
+#### 多重约束
+
+除了单个约束条件，我们还可以指定多个约束条件，例如除了让参数实现 Summary 特征外，还可以让参数实现 Display 特征以控制它的格式化输出：
+```rust
+pub fn notify(item: &(impl Summary + Display)) {}
+```
+
+除了上述的语法糖形式，还能使用特征约束的形式：
+```rust
+pub fn notify<T: Summary + Display>(item: &T) {}
+```
+通过这两个特征，就可以使用 `item.summarize` 方法，以及通过 `println!("{}", item)` 来格式化输出 item。
 
 
 
