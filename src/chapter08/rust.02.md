@@ -201,11 +201,29 @@ pub fn notify(item: &(impl Summary + Display)) {}
 ```
 
 除了上述的语法糖形式，还能使用特征约束的形式：
+
 ```rust
 pub fn notify<T: Summary + Display>(item: &T) {}
 ```
+
 通过这两个特征，就可以使用 `item.summarize` 方法，以及通过 `println!("{}", item)` 来格式化输出 item。
 
+#### Where 约束
+
+当特征约束变得很多时，函数的签名将变得很复杂：
+
+```rust
+fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {}
+```
+
+严格来说，上面的例子还是不够复杂，但是我们还是能对其做一些形式上的改进，通过 where：
+
+```rust
+fn some_function<T, U>(t: &T, u: &U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{}
+```
 
 
 
