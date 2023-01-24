@@ -165,6 +165,7 @@ pub fn notify(item: &impl Summary) {
     println!("Breaking news! {}", item.summarize());
 }
 ```
+
 `impl Summary`，简直太贴切了，故名思义，它的意思是 实现了Summary特征 的 item 参数。
 
 你可以使用任何实现了 Summary 特征的类型作为该函数的参数，同时在函数体内，还可以调用该特征的方法，例如 summarize 方法。具体的说，可以传递 Post 或 Weibo 的实例来作为参数，而其它类如 String 或者 i32 的类型则不能用做该函数的参数，因为它们没有实现 Summary 特征。
@@ -178,6 +179,7 @@ pub fn notify<T: Summary>(item: &T) {
     println!("Breaking news! {}", item.summarize());
 }
 ```
+
 真正的完整书写形式如上所述，形如 `T: Summary` 被称为特征约束。
 
 在简单的场景下 `impl Trait` 这种语法糖就足够使用，但是对于复杂的场景，特征约束可以让我们拥有更大的灵活性和语法表现能力，例如一个函数接受两个 `impl Summary` 的参数：
@@ -224,8 +226,6 @@ fn some_function<T, U>(t: &T, u: &U) -> i32
           U: Clone + Debug
 {}
 ```
-
-
 
 
 
