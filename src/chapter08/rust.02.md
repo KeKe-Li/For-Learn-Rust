@@ -272,5 +272,8 @@ impl<T: Display> ToString for T {
 ```rust
 let s = 3.to_string();    
 ```    
+    
+#### 函数返回中的 impl Trait
+    
 
 
