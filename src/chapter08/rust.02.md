@@ -345,5 +345,46 @@ fn main() {
 代码中引入了 `std::convert::TryInto` 特征，但是却没有使用它，可能这里有些困惑，主要原因在于如果你要使用一个特征的方法，那么你需要将该特征引入当前的作用域中，我们在上面用到了 `try_into` 方法，因此需要引入对应的特征。
 
 但是 Rust 又提供了一个非常便利的办法，即把最常用的标准库中的特征通过 `std::prelude` 模块提前引入到当前作用域中，其中包括了 `std::convert::TryInto`，你可以尝试删除第一行的代码 `use ...`，看看是否会报错。
-
            
+           
+ #### 应用示例
+  
+ 1. 为自定义类型实现操作 
+           
+ 在 Rust 中除了数值类型的加法，String 也可以做加法，因为 Rust 为该类型实现了 ·std::ops::Add· 特征，同理，如果我们为自定义类型实现了该特征，那就可以自己实现 Point1 + Point2 的操作:
+
+```rust
+ use std::ops::Add;
+
+// 为Point结构体派生Debug特征，用于格式化输出
+#[derive(Debug)]
+struct Point<T: Add<T, Output = T>> { //限制类型T必须实现了Add特征，否则无法进行+操作。
+    x: T,
+    y: T,
+}
+
+impl<T: Add<T, Output = T>> Add for Point<T> {
+    type Output = Point<T>;
+
+    fn add(self, p: Point<T>) -> Point<T> {
+        Point{
+            x: self.x + p.x,
+            y: self.y + p.y,
+        }
+    }
+}
+
+fn add<T: Add<T, Output=T>>(a:T, b:T) -> T {
+    a + b
+}
+
+fn main() {
+    let p1 = Point{x: 1.1f32, y: 1.1f32};
+    let p2 = Point{x: 2.1f32, y: 2.1f32};
+    println!("{:?}", add(p1, p2));
+
+    let p3 = Point{x: 1i32, y: 1i32};
+    let p4 = Point{x: 2i32, y: 2i32};
+    println!("{:?}", add(p3, p4));
+}          
+```           
