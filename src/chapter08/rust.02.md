@@ -388,3 +388,74 @@ fn main() {
     println!("{:?}", add(p3, p4));
 }          
 ```           
+
+2. 自定义类型的打印输出
+
+在开发过程中，往往只要使用 #[derive(Debug)] 对我们的自定义类型进行标注，即可实现打印输出的功能：
+    
+```rust
+ #[derive(Debug)]
+struct Point{
+    x: i32,
+    y: i32
+}
+fn main() {
+    let p = Point{x:3,y:3};
+    println!("{:?}",p);
+}   
+```    
+    
+但是在实际项目中，往往需要对我们的自定义类型进行自定义的格式化输出，以让用户更好的阅读理解我们的类型，此时就要为自定义类型实现 `std::fmt::Display` 特征：
+    
+ ```rust
+ #![allow(dead_code)]
+
+use std::fmt;
+use std::fmt::{Display};
+
+#[derive(Debug,PartialEq)]
+enum FileState {
+  Open,
+  Closed,
+}
+
+#[derive(Debug)]
+struct File {
+  name: String,
+  data: Vec<u8>,
+  state: FileState,
+}
+
+impl Display for FileState {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+     match *self {
+         FileState::Open => write!(f, "OPEN"),
+         FileState::Closed => write!(f, "CLOSED"),
+     }
+   }
+}
+
+impl Display for File {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "<{} ({})>",
+             self.name, self.state)
+   }
+}
+
+impl File {
+  fn new(name: &str) -> File {
+    File {
+        name: String::from(name),
+        data: Vec::new(),
+        state: FileState::Closed,
+    }
+  }
+}
+
+fn main() {
+  let f6 = File::new("f6.txt");
+  //...
+  println!("{:?}", f6);
+  println!("{}", f6);
+}   
+ ```   
