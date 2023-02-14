@@ -168,3 +168,74 @@ fn main() {
 
 因此，可以使用特征对象来代表泛型或具体的类型。
 
+继续来完善之前的 UI 组件代码，首先来实现 Screen：
+
+```rust
+pub struct Screen {
+    pub components: Vec<Box<dyn Draw>>,
+}
+```
+
+其中存储了一个动态数组，里面元素的类型是 Draw 特征对象：`Box<dyn Draw>`，任何实现了 Draw 特征的类型，都可以存放其中。
+
+再来为 Screen 定义 run 方法，用于将列表中的 UI 组件渲染在屏幕上：
+```rust
+impl Screen {
+    pub fn run(&self) {
+        for component in self.components.iter() {
+            component.draw();
+        }
+    }
+}
+```
+至此，我们就完成了之前的目标：在列表中存储多种不同类型的实例，然后将它们使用同一个方法逐一渲染在屏幕上！
+
+再来看看，如果通过泛型实现，会如何：
+```rust
+pub struct Screen<T: Draw> {
+    pub components: Vec<T>,
+}
+
+impl<T> Screen<T>
+    where T: Draw {
+    pub fn run(&self) {
+        for component in self.components.iter() {
+            component.draw();
+        }
+    }
+}
+```
+Screen 的列表中，存储了类型为 T 的元素，然后在 Screen 中使用特征约束让 T 实现了 Draw 特征，进而可以调用 draw 方法。
+
+但是这种写法限制了 Screen 实例的 `Vec<T>` 中的每个元素必须是 Button 类型或者全是 `SelectBox` 类型。如果只需要同质（相同类型）集合，更倾向于这种写法：使用泛型和 特征约束，因为实现更清晰，且性能更好(特征对象，需要在运行时从 vtable 动态查找需要调用的方法)。
+
+现在来运行渲染下咱们精心设计的 UI 组件列表：
+```rust
+fn main() {
+    let screen = Screen {
+        components: vec![
+            Box::new(SelectBox {
+                width: 75,
+                height: 10,
+                options: vec![
+                    String::from("Yes"),
+                    String::from("Maybe"),
+                    String::from("No")
+                ],
+            }),
+            Box::new(Button {
+                width: 50,
+                height: 10,
+                label: String::from("OK"),
+            }),
+        ],
+    };
+
+    screen.run();
+}
+```
+使用 `Box::new(T)` 的方式来创建了两个 `Box<dyn Draw>` 特征对象，如果以后还需要增加一个 UI 组件，那么让该组件实现 Draw 特征，则可以很轻松的将其渲染在屏幕上，甚至用户可以引入我们的库作为三方库，然后在自己的库中为自己的类型实现 Draw 特征，然后进行渲染。
+
+在动态类型语言中，有一个很重要的概念：鸭子类型(duck typing)，简单来说，就是只关心值长啥样，而不关心它实际是什么。当一个东西走起来像鸭子，叫起来像鸭子，那么它就是一只鸭子，就算它实际上是一个奥特曼，也不重要，我们就当它是鸭子。
+
+在上例中，Screen 在 run 的时候，我们并不需要知道各个组件的具体类型是什么。它也不检查组件到底是 Button 还是 SelectBox 的实例，只要它实现了 Draw 特征，就能通过 `Box::new` 包装成 `Box<dyn Draw>` 特征对象，然后被渲染在屏幕上。
