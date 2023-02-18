@@ -79,6 +79,7 @@ fn difference<A,B,C>(container: &C) -> i32
     C : Container<A,B> {...}
 ```
 可以看到，由于使用了泛型，导致函数头部也必须增加泛型的声明，而使用关联类型，将得到可读性好得多的代码：
+
 ```rust
 
 trait Container{
