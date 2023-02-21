@@ -164,6 +164,58 @@ impl Add<Meters> for Millimeters {
 
 对于第二点，也很好理解，如果你在一个复杂类型的基础上，新引入一个泛型参数，可能需要修改很多地方，但是如果新引入的泛型参数有了默认类型，情况就会好很多，添加泛型参数后，使用这个类型的代码需要逐个在类型提示部分添加泛型参数，就很麻烦；但是有了默认参数（且默认参数取之前的实现里假设的值的情况下）之后，原有的使用这个类型的代码就不需要做改动了。
 
-归根到底，默认泛型参数，是有用的，但是大多数情况下，咱们确实用不到，当需要用到时，大家再回头来查阅本章即可。
+#### 调用同名的方法
+
+不同特征拥有同名的方法是很正常的事情，你没有任何办法阻止这一点；甚至除了特征上的同名方法外，在你的类型上，也有同名方法：
+```rust
+
+trait Pilot {
+    fn fly(&self);
+}
+
+trait Wizard {
+    fn fly(&self);
+}
+
+struct Human;
+
+impl Pilot for Human {
+    fn fly(&self) {
+        println!("This is your captain speaking.");
+    }
+}
+
+impl Wizard for Human {
+    fn fly(&self) {
+        println!("Up!");
+    }
+}
+
+impl Human {
+    fn fly(&self) {
+        println!("*waving arms furiously*");
+    }
+}
+```
+这里，不仅仅两个特征 Pilot 和 Wizard 有 fly 方法，就连实现那两个特征的 Human 单元结构体，也拥有一个同名方法 fly.
+
+既然代码已经不可更改，那下面我们来讲讲该如何调用这些 fly 方法。
+
+#### 优先调用类型上的方法
+
+当调用 Human 实例的 fly 时，编译器默认调用该类型中定义的方法：
+```rust
+fn main() {
+    let person = Human;
+    person.fly();
+}
+```
+这段代码会打印 `*waving arms furiously*`，说明直接调用了类型上定义的方法。
+
+
+
+
+
+
 
 
