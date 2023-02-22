@@ -213,6 +213,99 @@ fn main() {
 这段代码会打印 `*waving arms furiously*`，说明直接调用了类型上定义的方法。
 
 
+#### 调用特征上的方法
+
+为了能够调用两个特征的方法，需要使用显式调用的语法：
+
+```rust
+fn main() {
+    let person = Human;
+    Pilot::fly(&person); // 调用Pilot特征上的方法
+    Wizard::fly(&person); // 调用Wizard特征上的方法
+    person.fly(); // 调用Human类型自身的方法
+}
+```
+运行后依次输出：
+```rust
+This is your captain speaking.
+Up!
+*waving arms furiously*
+```
+
+因为 fly 方法的参数是 self，当显式调用时，编译器就可以根据调用的类型( self 的类型)决定具体调用哪个方法。
+
+这个时候问题又来了，如果方法没有 self 参数呢？那么还有方法没有 self 参数？看到这个疑问，这里就需要提到了关联函数，你还记得嘛？
+```rust
+trait Animal {
+    fn baby_name() -> String;
+}
+
+struct Dog;
+
+impl Dog {
+    fn baby_name() -> String {
+        String::from("Spot")
+    }
+}
+
+impl Animal for Dog {
+    fn baby_name() -> String {
+        String::from("puppy")
+    }
+}
+
+fn main() {
+    println!(" a baby dog is called a {}", Dog::baby_name());
+}
+```
+这里我们给小狗起名为Spot，其它动物称呼狗宝宝为puppy，这个时候假如有动物不知道该如何称呼狗宝宝，它需要查询一下。
+
+`Dog::baby_name()` 的调用方式显然不行，因为这只是狗妈妈对宝宝的爱称，可能你会想到通过下面的方式查询其他动物对狗狗的称呼：
+
+```rust 
+fn main() {
+    println!("A baby dog is called a {}", Animal::baby_name());
+}
+```
+无情报错了：
+```rust
+
+error[E0283]: type annotations needed // 需要类型注释
+  --> src/main.rs:20:43
+   |
+20 |     println!("A baby dog is called a {}", Animal::baby_name());
+   |                                           ^^^^^^^^^^^^^^^^^ cannot infer type // 无法推断类型
+   |
+   = note: cannot satisfy `_: Animal`
+```
+因为单纯从 `Animal::baby_name()` 上，编译器无法得到任何有效的信息：实现 Animal 特征的类型可能有很多，你究竟是想获取哪个动物宝宝的名称？
+
+此时，就需要使用完全限定语法。
+
+#### 完全限定语法
+
+完全限定语法是调用函数最为明确的方式：
+
+```rust
+fn main() {
+    println!("A baby dog is called a {}", <Dog as Animal>::baby_name());
+}
+```
+在尖括号中，通过 as 关键字，我们向 Rust 编译器提供了类型注解，也就是 Animal 就是 Dog，而不是其他动物，因此最终会调用 `impl Animal for Dog` 中的方法，获取到其它动物对狗宝宝的称呼：puppy。
+
+这里的完全限定语法定义为：
+```rust
+<Type as Trait>::function(receiver_if_method, next_arg, ...);
+```
+
+上面定义中，第一个参数是方法接收器 receiver （三种 self），只有方法才拥有，例如关联函数就没有 receiver。
+
+完全限定语法可以用于任何函数或方法调用，那么我们为何很少用到这个语法？原因是 Rust 编译器能根据上下文自动推导出调用的路径，因此大多数时候，我们都无需使用完全限定语法。
+
+只有当存在多个同名函数或方法，且 Rust 无法区分出你想调用的目标函数时，该用法才能真正有用武之地。
+
+
+
 
 
 
