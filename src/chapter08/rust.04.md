@@ -304,9 +304,61 @@ fn main() {
 
 只有当存在多个同名函数或方法，且 Rust 无法区分出你想调用的目标函数时，该用法才能真正有用武之地。
 
+#### 特征定义中的特征约束
 
+有时，我们会需要让某个特征 A 能使用另一个特征 B 的功能(另一种形式的特征约束)，这种情况下，不仅仅要为类型实现特征 A，还要为类型实现特征 B 才行，这就是 supertrait 。
 
+例如有一个特征 OutlinePrint，它有一个方法，能够对当前的实现类型进行格式化输出：
 
+```rust
+use std::fmt::Display;
+
+trait OutlinePrint: Display {
+    fn outline_print(&self) {
+        let output = self.to_string();
+        let len = output.len();
+        println!("{}", "*".repeat(len + 4));
+        println!("*{}*", " ".repeat(len + 2));
+        println!("* {} *", output);
+        println!("*{}*", " ".repeat(len + 2));
+        println!("{}", "*".repeat(len + 4));
+    }
+}
+```
+`OutlinePrint: Display`，很像之前讲过的特征约束，只不过用在了特征定义中而不是函数的参数中，是的，在某种意义上来说，这和特征约束非常类似，都用来说明一个特征需要实现另一个特征，这里就是：如果你想要实现 OutlinePrint 特征，首先你需要实现 Display 特征。
+
+想象一下，假如没有这个特征约束，那么` self.to_string` 还能够调用吗（ to_string 方法会为实现 Display 特征的类型自动实现）？编译器肯定是不愿意的，会报错说当前作用域中找不到用于 `&Self` 类型的方法 `to_string` ：
+
+```rust
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl OutlinePrint for Point {}
+```
+因为 Point 没有实现 Display 特征，会得到下面的报错：
+```rust
+error[E0277]: the trait bound `Point: std::fmt::Display` is not satisfied
+  --> src/main.rs:20:6
+   |
+20 | impl OutlinePrint for Point {}
+   |      ^^^^^^^^^^^^ `Point` cannot be formatted with the default formatter;
+try using `:?` instead if you are using a format string
+   |
+   = help: the trait `std::fmt::Display` is not implemented for `Point`
+```
+既然我们有求于编译器，那只能选择满足它咯：
+```rust
+use std::fmt;
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+```
+上面代码为 Point 实现了 Display 特征，那么`to_string` 方法也将自动实现：最终获得字符串是通过这里的 fmt 方法获得的。
 
 
 
