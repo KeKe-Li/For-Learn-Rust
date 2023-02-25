@@ -349,6 +349,7 @@ try using `:?` instead if you are using a format string
    = help: the trait `std::fmt::Display` is not implemented for `Point`
 ```
 既然我们有求于编译器，那只能选择满足它咯：
+
 ```rust
 use std::fmt;
 
