@@ -349,6 +349,7 @@ try using `:?` instead if you are using a format string
    = help: the trait `std::fmt::Display` is not implemented for `Point`
 ```
 既然我们有求于编译器，那只能选择满足它咯：
+
 ```rust
 use std::fmt;
 
@@ -362,5 +363,54 @@ impl fmt::Display for Point {
 
 
 
+#### 在外部类型上实现外部特征(newtype)
 
+对于孤儿规则，简单来说，就是特征或者类型必需至少有一个是本地的，才能在此类型上定义特征。
 
+这里提供一个办法来绕过孤儿规则，那就是使用newtype模式，简而言之：就是为一个元组结构体创建新类型。该元组结构体封装有一个字段，该字段就是希望实现特征的具体类型。
+
+该封装类型是本地的，因此我们可以为此类型实现外部的特征。
+
+newtype 不仅仅能实现以上的功能，而且它在运行时没有任何性能损耗，因为在编译期，该类型会被自动忽略。
+
+下面来看一个例子，我们有一个动态数组类型： `Vec<T>`，它定义在标准库中，还有一个特征 Display，它也定义在标准库中，如果没有 newtype，我们是无法为 `Vec<T>` 实现 Display 的：
+```rust
+error[E0117]: only traits defined in the current crate can be implemented for arbitrary types
+--> src/main.rs:5:1
+|
+5 | impl<T> std::fmt::Display for Vec<T> {
+| ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^------
+| |                             |
+| |                             Vec is not defined in the current crate
+| impl doesn't use only types from inside the current crate
+|
+= note: define and implement a trait or new type instead
+```
+编译器给了我们提示： `define and implement a trait or new type instead`，重新定义一个特征，或者使用 new type，前者当然不可行，那么来试试后者：
+
+```rust
+use std::fmt;
+
+struct Wrapper(Vec<String>);
+
+impl fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]", self.0.join(", "))
+    }
+}
+
+fn main() {
+    let w = Wrapper(vec![String::from("hello"), String::from("keke")]);
+    println!("w = {}", w);
+}
+```
+
+其中，struct Wrapper(Vec<String>) 就是一个元组结构体，它定义了一个新类型 Wrapper。
+
+既然 new type 有这么多好处，它有没有不好的地方呢？答案是肯定的。注意到我们怎么访问里面的数组吗？`self.0.join(", ")`，是的，很繁琐，因为需要先从 Wrapper 中取出数组: `self.0`，然后才能执行 join 方法。
+
+类似的，任何数组上的方法，你都无法直接调用，需要先用 self.0 取出数组，然后再进行调用。
+
+当然，解决办法还是有的，要不怎么说 Rust 是极其强大灵活的编程语言！Rust 提供了一个特征叫 Deref，实现该特征后，可以自动做一层类似类型转换的操作，可以将 Wrapper 变成 `Vec<String>` 来使用。这样就会像直接使用数组那样去使用 Wrapper，而无需为每一个操作都添加上 self.0。
+
+同时，如果不想 Wrapper 暴露底层数组的所有方法，我们还可以为 Wrapper 去重载这些方法，实现隐藏的目的。
