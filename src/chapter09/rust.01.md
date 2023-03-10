@@ -108,5 +108,121 @@ let does_not_exist = v.get(100);
 
 既然如此，为何不统一使用 `v.get` 的形式？因为实在是有些繁琐，Rust 语言的设计者和使用者在审美这方面还是相当统一的：简洁即正义，何况性能上也会有轻微的损耗。
 
-既然有两个选择，肯定就有如何选择的问题，答案很简单，当你确保索引不会越界的时候，就用索引访问，否则用 `.get`。例如，访问第几个数组元素并不取决于我们，而是取决于用户的输入时，用 `.get` 会非常适合，
+既然有两个选择，肯定就有如何选择的问题，答案很简单，当你确保索引不会越界的时候，就用索引访问，否则用 `.get`。例如，访问第几个数组元素并不取决于我们，而是取决于用户的输入时，用 `.get` 会非常适合。
 
+#### 同时借用多个数组元素
+
+既然涉及到借用数组元素，那么很可能会遇到同时借用多个数组元素的情况。
+```rust
+let mut v = vec![1, 2, 3, 4, 5];
+
+let first = &v[0];
+
+v.push(6);
+
+println!("The first element is: {first}");
+```
+先不运行，我们来推断下结果，首先 `first = &v[0]` 进行了不可变借用，`v.push` 进行了可变借用，如果 first 在 `v.push` 之后不再使用，那么该段代码可以成功编译.
+
+可是上面的代码中，first 这个不可变借用在可变借用 `v.push` 后被使用了，那么妥妥的，编译器就会报错：
+```bash
+$ cargo run
+Compiling collections v0.1.0 (file:///projects/collections)
+error[E0502]: cannot borrow `v` as mutable because it is also borrowed as immutable 无法对v进行可变借用，因此之前已经进行了不可变借用
+--> src/main.rs:6:5
+|
+4 |     let first = &v[0];
+|                  - immutable borrow occurs here // 不可变借用发生在此处
+5 |
+6 |     v.push(6);
+|     ^^^^^^^^^ mutable borrow occurs here // 可变借用发生在此处
+7 |
+8 |     println!("The first element is: {}", first);
+|                                          ----- immutable borrow later used here // 不可变借用在这里被使用
+
+For more information about this error, try `rustc --explain E0502`.
+error: could not compile `collections` due to previous error
+```
+这里这两个引用不应该互相影响的：一个是查询元素，一个是在数组尾部插入元素，完全不相干的操作，为何编译器要这么严格呢？
+
+原因在于：数组的大小是可变的，当旧数组的大小不够用时，Rust 会重新分配一块更大的内存空间，然后把旧数组拷贝过来。 这种情况下，之前的引用显然会指向一块无效的内存，这非常 rusty —— 对用户进行严格的教育。
+
+#### 迭代遍历 Vector 中的元素
+
+如果想要依次访问数组中的元素，可以使用迭代的方式去遍历数组，这种方式比用下标的方式去遍历数组更安全也更高效（每次下标访问都会触发数组边界检查）：
+```rust
+let v = vec![1, 2, 3];
+for i in &v {
+    println!("{i}");
+}
+```
+也可以在迭代过程中，修改 Vector 中的元素：
+```rust
+let mut v = vec![1, 2, 3];
+for i in &mut v {
+    *i += 10
+}
+```
+
+#### 存储不同类型的元素
+
+我们知道在数组中，数组的元素必须类型相同，但是有什么办法能存储不同类型的数据吗？答案是有的,那就是通过使用枚举类型和特征对象来实现不同类型元素的存储。
+
+先来看看通过枚举如何实现：
+```rust
+#[derive(Debug)]
+enum IpAddr {
+    V4(String),
+    V6(String)
+}
+fn main() {
+    let v = vec![
+        IpAddr::V4("127.0.0.1".to_string()),
+        IpAddr::V6("::1".to_string())
+    ];
+
+    for ip in v {
+        show_addr(ip)
+    }
+}
+
+fn show_addr(ip: IpAddr) {
+    println!("{:?}",ip);
+}
+```
+
+数组 v 中存储了两种不同的 ip 地址，但是这两种都属于 IpAddr 枚举类型的成员，因此可以存储在数组中。
+
+再来看看特征对象的实现：
+```rust
+trait IpAddr {
+    fn display(&self);
+}
+
+struct V4(String);
+impl IpAddr for V4 {
+    fn display(&self) {
+        println!("ipv4: {:?}",self.0)
+    }
+}
+struct V6(String);
+impl IpAddr for V6 {
+    fn display(&self) {
+        println!("ipv6: {:?}",self.0)
+    }
+}
+
+fn main() {
+    let v: Vec<Box<dyn IpAddr>> = vec![
+        Box::new(V4("127.0.0.1".to_string())),
+        Box::new(V6("::1".to_string())),
+    ];
+
+    for ip in v {
+        ip.display();
+    }
+}
+```
+比枚举实现要稍微复杂一些，我们为 V4 和 V6 都实现了特征 IpAddr，然后将它俩的实例用 `Box::new` 包裹后，存在了数组 v 中，需要注意的是，这里必须手动地指定类型：`Vec<Box<dyn IpAddr>>`，表示数组 v 存储的是特征 IpAddr 的对象，这样就实现了在数组中存储不同的类型。
+
+在实际使用场景中，特征对象数组要比枚举数组常见很多，主要原因在于特征对象非常灵活，而编译器对枚举的限制较多，且无法动态增加类型。
