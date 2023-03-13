@@ -42,3 +42,58 @@ my_gems.insert("河边捡的误以为是宝石的石头", 18);
 所有的集合类型都是动态的，意味着它们没有固定的内存大小，因此它们底层的数据都存储在内存堆上，然后通过一个存储在栈中的引用类型来访问。同时，跟其它集合类型一致，HashMap 也是内聚性的，即所有的 K 必须拥有同样的类型，V 也是如此。
 
 跟 Vec 一样，如果预先知道要存储的 KV 对个数，可以使用 `HashMap::with_capacity(capacity)` 创建指定大小的 HashMap，避免频繁的内存分配和拷贝，提升性能
+
+* 使用迭代器和 collect 方法创建
+
+在实际使用中，不是所有的场景都能 new 一个哈希表后，然后依次插入对应的键值对，而是可能会从另外一个数据结构中，获取到对应的数据，最终生成 HashMap。
+
+例如考虑一个场景，有一张表格中记录了足球联赛中各队伍名称和积分的信息，这张表如果被导入到 Rust 项目中，一个合理的数据结构是 `Vec<(String, u32)>` 类型，该数组中的元素是一个个元组，该数据结构跟表格数据非常契合：表格中的数据都是逐行存储，每一个行都存有一个 (队伍名称, 积分) 的信息。
+
+但是在很多时候，又需要通过队伍名称来查询对应的积分，此时动态数组就不适用了，因此可以用 HashMap 来保存相关的队伍名称 `->` 积分映射关系。 理想很丰满，现实很骨感，如何将 `Vec<(String, u32)>` 中的数据快速写入到 `HashMap<String, u32>` 中？
+
+一个简单的方法如下：
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let teams_list = vec![
+        ("中国队".to_string(), 100),
+        ("美国队".to_string(), 10),
+        ("日本队".to_string(), 50),
+    ];
+
+    let mut teams_map = HashMap::new();
+    for team in &teams_list {
+        teams_map.insert(&team.0, team.1);
+    }
+
+    println!("{:?}",teams_map)
+}
+```
+遍历列表，将每一个元组作为一对 KV 插入到 HashMap 中，很简单，但是……也不太聪明的样子，换个词说就是 —— 不够 rusty。
+
+好在，Rust 为我们提供了一个非常精妙的解决办法：先将 Vec 转为迭代器，接着通过 collect 方法，将迭代器中的元素收集后，转成 HashMap：
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let teams_list = vec![
+        ("中国队".to_string(), 100),
+        ("美国队".to_string(), 10),
+        ("日本队".to_string(), 50),
+    ];
+
+    let teams_map: HashMap<_,_> = teams_list.into_iter().collect();
+    
+    println!("{:?}",teams_map)
+}
+```
+代码很简单，`into_iter` 方法将列表转为迭代器，接着通过 collect 进行收集，不过需要注意的是，collect 方法在内部实际上支持生成多种类型的目标集合，因此我们需要通过类型标注 `HashMap<_,_>`来告诉编译器：请帮我们收集为 HashMap 集合类型，具体的 KV 类型，麻烦编译器推导。
+
+```bash
+error[E0282]: type annotations needed // 需要类型标注
+  --> src/main.rs:10:9
+   |
+10 |     let teams_map = teams_list.into_iter().collect();
+   |         ^^^^^^^^^ consider giving `teams_map` a type // 给予 `teams_map` 一个具体的类型
+```
