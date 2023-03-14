@@ -97,3 +97,70 @@ error[E0282]: type annotations needed // 需要类型标注
 10 |     let teams_map = teams_list.into_iter().collect();
    |         ^^^^^^^^^ consider giving `teams_map` a type // 给予 `teams_map` 一个具体的类型
 ```
+
+#### 所有权转移
+
+HashMap 的所有权规则与其它 Rust 类型没有区别：
+
+* 若类型实现 Copy 特征，该类型会被复制进 HashMap，因此无所谓所有权
+* 若没实现 Copy 特征，所有权将被转移给 HashMap 中
+
+示例:
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let name = String::from("Sunface");
+    let age = 18;
+
+    let mut handsome_boys = HashMap::new();
+    handsome_boys.insert(name, age);
+
+    println!("天下，{}最好的", name);
+    println!("还有，他的真实年龄远不止{}岁", age);
+}
+```
+运行:
+```bash
+error[E0382]: borrow of moved value: `name`
+  --> src/main.rs:10:32
+   |
+4  |     let name = String::from("Sunface");
+   |         ---- move occurs because `name` has type `String`, which does not implement the `Copy` trait
+...
+8  |     handsome_boys.insert(name, age);
+   |                          ---- value moved here
+9  |
+10 |     println!("天下，{}最好的", name);
+   |                                            ^^^^ value borrowed here after move
+```
+提示很清晰，name 是 String 类型，因此它受到所有权的限制，在 insert 时，它的所有权被转移给 handsome_boys，所以最后在使用时，会遇到这个无情但是意料之中的报错。
+
+如果你使用引用类型放入 HashMap 中，请确保该引用的生命周期至少跟 HashMap 活得一样久：
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let name = String::from("Sunface");
+    let age = 18;
+
+    let mut handsome_boys = HashMap::new();
+    handsome_boys.insert(&name, age);
+
+    std::mem::drop(name);
+    println!("天下，{:?}最好的", handsome_boys);
+    println!("还有，他的真实年龄远不止{}岁", age);
+}
+```
+
+上面代码，我们借用 name 获取了它的引用，然后插入到 handsome_boys 中，至此一切都很完美。但是紧接着，就通过 drop 函数手动将 name 字符串从内存中移除，再然后就报错了：
+
+```bash
+handsome_boys.insert(&name, age);
+   |                          ----- borrow of `name` occurs here // name借用发生在此处
+9  |
+10 |     std::mem::drop(name);
+   |                    ^^^^ move out of `name` occurs here // name的所有权被转移走
+11 |     println!("天下，{:?}最好的", handsome_boys);
+   |                                              ------------- borrow later used here // 所有权转移后，还试图使用name
+```
