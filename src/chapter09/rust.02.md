@@ -164,3 +164,53 @@ handsome_boys.insert(&name, age);
 11 |     println!("天下，{:?}最好的", handsome_boys);
    |                                              ------------- borrow later used here // 所有权转移后，还试图使用name
 ```
+
+#### 查询 HashMap
+
+通过 get 方法可以获取元素：
+```rust
+fn main(){
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+
+    let team_name = String::from("Blue");
+    let score: Option<&i32> = scores.get(&team_name);
+}
+```
+
+上面有几点需要注意：
+
+* get 方法返回一个 `Option<&i32>` 类型：当查询不到时，会返回一个 None，查询到时返回 `Some(&i32)`
+* `&i32` 是对 HashMap 中值的借用，如果不使用借用，可能会发生所有权的转移.
+
+还可以继续拓展下，上面的代码中，如果我们想直接获得值类型的 score 该怎么办，答案简约但不简单:
+```rust
+let score: i32 = scores.get(&team_name).copied().unwrap_or(0);
+```
+此外，还可以通过循环的方式依次遍历 KV 对：
+```rust
+fn main(){
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+
+    for (key, value) in &scores {
+        println!("{}: {}", key, value);
+    }
+}
+```
+
+最终输出：
+```bash
+Yellow: 50
+Blue: 10
+```
+
+
