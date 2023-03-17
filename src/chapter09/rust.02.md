@@ -213,4 +213,98 @@ Yellow: 50
 Blue: 10
 ```
 
+#### 更新 HashMap 中的值
+
+应用示例：
+```rust
+fn main() {
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert("Blue", 10);
+
+    // 覆盖已有的值
+    let old = scores.insert("Blue", 20);
+    assert_eq!(old, Some(10));
+
+    // 查询新插入的值
+    let new = scores.get("Blue");
+    assert_eq!(new, Some(&20));
+
+    // 查询Yellow对应的值，若不存在则插入新值
+    let v = scores.entry("Yellow").or_insert(5);
+    assert_eq!(*v, 5); // 不存在，插入5
+
+    // 查询Yellow对应的值，若不存在则插入新值
+    let v = scores.entry("Yellow").or_insert(50);
+    assert_eq!(*v, 5); // 已经存在，因此50没有插入
+}
+```
+
+* 在已有值的基础上更新
+
+一个常用场景如下：查询某个 key 对应的值，若不存在则插入新值，若存在则对已有的值进行更新，例如在文本中统计词语出现的次数：
+```rust
+fn main(){
+    use std::collections::HashMap;
+
+    let text = "hello world wonderful world";
+
+    let mut map = HashMap::new();
+    // 根据空格来切分字符串(英文单词都是通过空格切分)
+    for word in text.split_whitespace() {
+        let count = map.entry(word).or_insert(0);
+        *count += 1;
+    }
+
+    println!("{:?}", map);
+}
+```
+上面代码中，新建一个 map 用于保存词语出现的次数，插入一个词语时会进行判断：若之前没有插入过，则使用该词语作 Key，插入次数 0 作为 Value，若之前插入过则取出之前统计的该词语出现的次数，对其加一。
+
+有两点值得注意：
+
+* `or_insert` 返回了 `&mut v` 引用，因此可以通过该可变引用直接修改 map 中对应的值
+* 使用 count 引用时，需要先进行解引用 *count，否则会出现类型不匹配
+
+#### 哈希函数
+
+这里有点比较好奇，为何叫哈希表，到底什么是哈希。
+
+先来设想下，如果要实现 Key 与 Value 的一一对应，是不是意味着我们要能比较两个 Key 的相等性？
+
+例如 "a" 和 "b"，1 和 2，当这些类型做 Key 且能比较时，可以很容易知道 1 对应的值不会错误的映射到 2 上，因为 1 不等于 2。
+
+因此，一个类型能否作为 Key 的关键就是是否能进行相等比较，或者说该类型是否实现了 `std::cmp::Eq` 特征。
+
+```markdown
+f32 和 f64 浮点数，没有实现 std::cmp::Eq 特征，因此不可以用作 HashMap 的 Key.
+```
+
+再来设想一点，若一个复杂点的类型作为 Key，那怎么在底层对它进行存储，怎么使用它进行查询和比较？ 是不是很棘手？好在我们有哈希函数：通过它把 Key 计算后映射为哈希值，然后使用该哈希值来进行存储、查询、比较等操作。
+
+但是问题又来了，如何保证不同 Key 通过哈希后的两个值不会相同？如果相同，那意味着我们使用不同的 Key，却查到了同一个结果，这种明显是错误的行为。 此时，就涉及到安全性跟性能的取舍了。
+
+若要追求安全，尽可能减少冲突，同时防止拒绝服务（Denial of Service, DoS）攻击，就要使用密码学安全的哈希函数，HashMap 就是使用了这样的哈希函数。反之若要追求性能，就需要使用没有那么安全的算法。
+
+* 高性能三方库
+
+因此若性能测试显示当前标准库默认的哈希函数不能满足你的性能需求，就需要去 crates.io 上寻找其它的哈希函数实现，使用方法很简单：
+```rust
+fn main(){
+    use std::hash::BuildHasherDefault;
+    use std::collections::HashMap;
+    // 引入第三方的哈希函数
+    use twox_hash::XxHash64;
+
+   // 指定HashMap使用第三方的哈希函数XxHash64
+    let mut hash: HashMap<_, _, BuildHasherDefault<XxHash64>> = Default::default();
+    hash.insert(42, "the answer");
+    assert_eq!(hash.get(&42), Some(&"the answer"));
+}
+```
+目前，HashMap 使用的哈希函数是 SipHash，它的性能不是很高，但是安全性很高。
+SipHash 在中等大小的 Key 上，性能相当不错，但是对于小型的 Key （例如整数）或者大型 Key （例如字符串）来说，性能还是不够好。若你需要极致性能，例如实现算法，可以考虑这个库：ahash.
+
 
