@@ -91,3 +91,53 @@ error[E0597]: `x` does not live long enough // `x` 活得不够久
 根据之前的结论，我们重新实现了代码，现在 x 的生命周期 'b 大于 r 的生命周期 'a，因此 r 对 x 的引用是安全的。
 
 接下来我们了解下生命周期.
+
+#### 函数中的生命周期
+
+先来看个例子 - 返回两个字符串切片中较长的那个，该函数的参数是两个字符串切片，返回值也是字符串切片：
+```rust
+fn main() {
+    let string1 = String::from("abcd");
+    let string2 = "xyz";
+
+    let result = longest(string1.as_str(), string2);
+    println!("The longest string is {}", result);
+}
+
+fn longest(x: &str, y: &str) -> &str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+这段 longest 实现，非常标准优美，就连多余的 return 和分号都没有，可是现实总是给我们重重一击：
+```bash
+error[E0106]: missing lifetime specifier
+ --> src/main.rs:9:33
+  |
+9 | fn longest(x: &str, y: &str) -> &str {
+  |               ----     ----     ^ expected named lifetime parameter // 参数需要一个生命周期
+  |
+  = help: this function's return type contains a borrowed value, but the signature does not say whether it is
+  borrowed from `x` or `y`
+  = 帮助： 该函数的返回值是一个引用类型，但是函数签名无法说明，该引用是借用自 `x` 还是 `y`
+help: consider introducing a named lifetime parameter // 考虑引入一个生命周期
+  |
+9 | fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+  |           ^^^^    ^^^^^^^     ^^^^^^^     ^^^
+```
+
+这真是一个复杂的提示，那感觉就好像是生命周期去非诚勿扰相亲，结果在初印象环节就 23 盏灯全灭。如果你仔细阅读，就会发现，其实主要是编译器无法知道该函数的返回值到底引用 x 还是 y ，因为编译器需要知道这些，来确保函数调用后的引用生命周期分析。
+
+不过，就这个函数而言，我们也不知道返回值到底引用哪个，因为一个分支返回 x，另一个分支返回 y...这可咋办？先来分析下。
+
+我们在定义该函数时，首先无法知道传递给函数的具体值，因此到底是 if 还是 else 被执行，无从得知。其次，传入引用的具体生命周期也无法知道，因此也不能像之前的例子那样通过分析生命周期来确定引用是否有效。
+
+同时，编译器的借用检查也无法推导出返回值的生命周期，因为它不知道 x 和 y 的生命周期跟返回值的生命周期之间的关系是怎样的。
+
+因此，在存在多个引用时，编译器有时会无法自动推导生命周期，此时就需要我们手动去标注，通过为参数标注合适的生命周期来帮助编译器进行借用检查的分析。
+
+
