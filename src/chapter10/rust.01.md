@@ -207,3 +207,35 @@ fn main() {
 
 因此，在这种情况下，通过生命周期标注，编译器得出了和我们肉眼观察一样的结论。
 
+再看一个例子，该例子证明了 result 的生命周期必须等于两个参数中生命周期较小的那个:
+```rust
+fn main() {
+    let string1 = String::from("long string is long");
+    let result;
+    {
+        let string2 = String::from("xyz");
+        result = longest(string1.as_str(), string2.as_str());
+    }
+    println!("The longest string is {}", result);
+}
+```
+运行就有错误了：
+```rust
+rror[E0597]: `string2` does not live long enough
+ --> src/main.rs:6:44
+  |
+6 |         result = longest(string1.as_str(), string2.as_str());
+  |                                            ^^^^^^^ borrowed value does not live long enough
+7 |     }
+  |     - `string2` dropped here while still borrowed
+8 |     println!("The longest string is {}", result);
+  |                                          ------ borrow later used here
+```
+
+在上述代码中，result 必须要活到 println!处，因为 result 的生命周期是 'a，因此 'a 必须持续到 println!。
+
+在 longest 函数中，string2 的生命周期也是 `'a`，由此说明 string2 也必须活到 `println!` 处，可是 string2 在代码中实际上只能活到内部语句块的花括号处 }，小于它应该具备的生命周期 `'a`，因此编译出错。
+
+作为人类，我们可以很清晰的看出 result 实际上引用了 string1，因为 string1 的长度明显要比 string2 长，既然如此，编译器不该如此矫情才对，它应该能认识到 result 没有引用 string2，让我们这段代码通过。而且 Rust 编译器在调教上是非常保守的：当可能出错也可能不出错时，它会选择前者，抛出编译错误。
+
+总之，显式的使用生命周期，可以让编译器正确的认识到多个引用之间的关系，最终帮我们提前规避可能存在的代码风险。
