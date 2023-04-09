@@ -239,3 +239,53 @@ rror[E0597]: `string2` does not live long enough
 作为人类，我们可以很清晰的看出 result 实际上引用了 string1，因为 string1 的长度明显要比 string2长，既然如此，编译器不该如此矫情才对，它应该能认识到 result 没有引用 string2，让我们这段代码通过。而且 Rust 编译器在调教上是非常保守的：当可能出错也可能不出错时，它会选择前者，抛出编译错误。
 
 总之，显式的使用生命周期，可以让编译器正确的认识到多个引用之间的关系，最终帮我们提前规避可能存在的代码风险。
+
+##### 深入思考生命周期标注
+
+使用生命周期的方式往往取决于函数的功能，例如之前的 longest 函数，如果它永远只返回第一个参数 x，生命周期的标注该如何修改?
+
+```rust
+fn longest<'a>(x: &'a str, y: &str) -> &'a str {
+    x
+}
+```
+在此例中，y 完全没有被使用，因此 y 的生命周期与 x 和返回值的生命周期没有任何关系，意味着我们也不必再为 y 标注生命周期，只需要标注 x 参数和返回值即可。
+
+函数的返回值如果是一个引用类型，那么它的生命周期只会来源于：
+
+* 函数参数的生命周期.
+* 函数体中某个新建引用的生命周期.
+
+若是后者情况，就是典型的悬垂引用场景：
+```rust
+fn longest<'a>(x: &str, y: &str) -> &'a str {
+    let result = String::from("really long string");
+    result.as_str()
+}
+```
+上面的函数的返回值就和参数 x，y 没有任何关系，而是引用了函数体内创建的字符串，那么很显然，该函数会报错：
+```rust
+error[E0515]: cannot return value referencing local variable `result` // 返回值result引用了本地的变量
+  --> src/main.rs:11:5
+   |
+11 |     result.as_str()
+   |     ------^^^^^^^^^
+   |     |
+   |     returns a value referencing data owned by the current function
+   |     `result` is borrowed here
+```
+主要问题就在于，result 在函数结束后就被释放，但是在函数结束后，对 result 的引用依然在继续。在这种情况下，没有办法指定合适的生命周期来让编译通过，因此我们也就在 Rust 中避免了悬垂引用。
+
+那遇到这种情况该怎么办？最好的办法就是返回内部字符串的所有权，然后把字符串的所有权转移给调用者：
+
+```rust
+fn longest<'a>(_x: &str, _y: &str) -> String {
+    String::from("really long string")
+}
+
+fn main() {
+   let s = longest("not", "important");
+}
+```
+至此，可以对生命周期进行下总结：生命周期语法用来将函数的多个引用参数和返回值的作用域关联到一起，一旦关联到一起后，Rust 就拥有充分的信息来确保我们的操作是内存安全的。
+
