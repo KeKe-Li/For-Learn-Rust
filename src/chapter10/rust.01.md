@@ -311,3 +311,37 @@ fn main() {
 `ImportantExcerpt` 结构体中有一个引用类型的字段 part，因此需要为它标注上生命周期。结构体的生命周期标注语法跟泛型参数语法很像，需要对生命周期参数进行声明 <'a>。该生命周期标注说明，结构体 `ImportantExcerpt` 所引用的字符串 str 必须比该结构体活得更久。
 
 从 main 函数实现来看，`ImportantExcerpt` 的生命周期从main开始，到 main 函数末尾结束，而该结构体引用的字符串从第一行开始，也是到 main 函数末尾结束，可以得出结论结构体引用的字符串活得比结构体久，这符合了编译器对生命周期的要求，因此编译通过。
+
+与之相反，下面的代码就无法通过编译：
+```rust
+#[derive(Debug)]
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+fn main() {
+    let i;
+    {
+        let novel = String::from("Call me Ishmael. Some years ago...");
+        let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+        i = ImportantExcerpt {
+            part: first_sentence,
+        };
+    }
+    println!("{:?}",i);
+}
+```
+观察代码，可以看出结构体比它引用的字符串活得更久，引用字符串在内部语句块末尾 `}` 被释放后，`println!` 依然在外面使用了该结构体，因此会导致无效的引用，不出所料，编译报错：
+
+```rust
+error[E0597]: `novel` does not live long enough
+  --> src/main.rs:10:30
+   |
+10 |         let first_sentence = novel.split('.').next().expect("Could not find a '.'");
+   |                              ^^^^^^^^^^^^^^^^ borrowed value does not live long enough
+...
+14 |     }
+   |     - `novel` dropped here while still borrowed
+15 |     println!("{:?}",i);
+   |                     - borrow later used here
+```
