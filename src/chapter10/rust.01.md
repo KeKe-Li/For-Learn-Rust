@@ -459,4 +459,37 @@ help: consider using one of the available lifetimes here
 ```
 这里真的要说下，Rust 编译器真的很强大，还贴心的给我们提示了该如何修改。这里我们更希望参数和返回值都是 `'a` 生命周期。
 
+#### 方法中的生命周期
+
+先在看下泛型的语法：
+```rust
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Point<T> {
+    fn x(&self) -> &T {
+        &self.x
+    }
+}
+```
+实际上，为具有生命周期的结构体实现方法时，我们使用的语法跟泛型参数语法很相似：
+
+```rust
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    fn level(&self) -> i32 {
+        3
+    }
+}
+```
+其中有几点需要注意的：
+
+* `impl` 中必须使用结构体的完整名称，包括 `<'a>`，因为生命周期标注也是结构体类型的一部分！
+* 方法签名中，往往不需要标注生命周期，得益于生命周期消除的第一和第三规则.
+
 
