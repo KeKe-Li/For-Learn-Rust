@@ -492,4 +492,25 @@ impl<'a> ImportantExcerpt<'a> {
 * `impl` 中必须使用结构体的完整名称，包括 `<'a>`，因为生命周期标注也是结构体类型的一部分！
 * 方法签名中，往往不需要标注生命周期，得益于生命周期消除的第一和第三规则.
 
+下面的例子展示了第三规则应用的场景：
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part(&self, announcement: &str) -> &str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+
+首先，编译器应用第一规则，给予每个输入参数一个生命周期:
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part<'b>(&'a self, announcement: &'b str) -> &str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+需要注意的是，编译器不知道 announcement 的生命周期到底多长，因此它无法简单的给予它生命周期 `'a`，而是重新声明了一个全新的生命周期 `'b`。
+
 
