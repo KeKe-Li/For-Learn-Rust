@@ -515,3 +515,99 @@ impl<'a> ImportantExcerpt<'a> {
 需要注意的是，编译器不知道 announcement 的生命周期到底多长，因此它无法简单的给予它生命周期 `'a`，而是重新声明了一个全新的生命周期 `'b`。
 
 
+接着，编译器应用第三规则，将 &self 的生命周期赋给返回值 &str：
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part<'b>(&'a self, announcement: &'b str) -> &'a str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+最开始的代码，尽管我们没有给方法标注生命周期，但是在第一和第三规则的配合下，编译器依然完美的为我们亮起了绿灯。
+
+在结束这块儿内容之前，再来做一个有趣的修改，将方法返回的生命周期改为`'b`：
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part<'b>(&'a self, announcement: &'b str) -> &'b str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+此时，编译器会报错，因为编译器无法知道 `'a` 和 `'b` 的关系。 `&self` 生命周期是 `'a`，那么 `self.part` 的生命周期也是 `'a`，但是好巧不巧的是，我们手动为返回值 `self.part` 标注了生命周期 `'b`，因此编译器需要知道 `'a` 和 `'b` 的关系。
+
+有一点很容易推理出来：由于 `&'a self` 是被引用的一方，因此引用它的 `&'b` `str` 必须要活得比它短，否则会出现悬垂引用。因此说明生命周期 `'b` 必须要比 `'a` 小，只要满足了这一点，编译器就不会再报错：
+```rust
+impl<'a: 'b, 'b> ImportantExcerpt<'a> {
+    fn announce_and_return_part(&'a self, announcement: &'b str) -> &'b str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+就关键点稍微解释下：
+
+* `'a`: `'b`，是生命周期约束语法，跟泛型约束非常相似，用于说明 `'a` 必须比 `'b` 活得久
+可以把 `'a` 和 `'b` 都在同一个地方声明（如上），或者分开声明但通过 where `'a`: `'b` 约束生命周期关系，如下：
+
+```rust
+impl<'a> ImportantExcerpt<'a> {
+    fn announce_and_return_part<'b>(&'a self, announcement: &'b str) -> &'b str
+    where
+        'a: 'b,
+    {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+
+总之，实现方法比想象中简单：加一个约束，就能暗示编译器，尽管引用吧，反正我想引用的内容比我活得久，我怎么都不会引用到无效的内容！
+
+#### 静态生命周期
+
+在 Rust 中有一个非常特殊的生命周期，那就是 `'static`，拥有该生命周期的引用可以和整个程序活得一样久。
+
+在之前我们学过字符串字面量，提到过它是被硬编码进 Rust 的二进制文件中，因此这些字符串变量全部具有 `'static` 的生命周期：
+```rust
+let s: &'static str = "真棒，嘿嘿";
+```
+
+这时候，有些聪明的小脑瓜就开始开动了：当生命周期不知道怎么标时，对类型施加一个静态生命周期的约束 T: `'static` 是不是很爽？这样我和编译器再也不用操心它到底活多久了。
+
+嗯，只能说，这个想法是对的，在不少情况下，`'static` 约束确实可以解决生命周期编译不通过的问题，但是问题来了：本来该引用没有活那么久，但是你非要说它活那么久，万一引入了潜在的 BUG 怎么办？
+
+因此，遇到因为生命周期导致的编译不通过问题，首先想的应该是：是否是我们试图创建一个悬垂引用，或者是试图匹配不一致的生命周期，而不是简单粗暴的用 `'static` 来解决问题。
+
+但是，话说回来，存在即合理，有时候，`'static` 确实可以帮助我们解决非常复杂的生命周期问题甚至是无法被手动解决的生命周期问题，那么此时就应该放心大胆的用，只要你确定：你的所有引用的生命周期都是正确的，只是编译器太笨不懂罢了。
+
+总结下：
+
+* 生命周期 `'static` 意味着能和程序活得一样久，例如字符串字面量和特征对象
+* 实在遇到解决不了的生命周期标注问题，可以尝试 `T: 'static`，有时候它会给你奇迹
+
+#### 一个复杂例子: 泛型、特征约束
+
+最后用一个稍微复杂点的例子来结束：
+```rust
+use std::fmt::Display;
+
+fn longest_with_an_announcement<'a, T>(
+    x: &'a str,
+    y: &'a str,
+    ann: T,
+) -> &'a str
+where
+    T: Display,
+{
+    println!("Announcement! {}", ann);
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+依然是熟悉的配方 `longest`，但是： `ann`，因为要用格式化 `{}` 来输出 `ann`，因此需要它实现 `Display` 特征。
