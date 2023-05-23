@@ -83,3 +83,85 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 Windows 系统（PowerShell）： $env:RUST_BACKTRACE=1 ; cargo run
 ```
 
+#### backtrace 栈展开
+
+在开发的项目中,错误往往涉及到很长的调用链甚至会深入第三方库，如果没有栈展开技术，错误将难以跟踪处理，下面我们来看一个真实的崩溃例子：
+```rust
+fn main() {
+    let v = vec![1, 2, 3];
+
+    v[99];
+}
+```
+上面的代码很简单，数组只有 3 个元素，我们却尝试去访问它的第 100 号元素(数组索引从 0 开始)，那自然会崩溃。
+
+此时肯定要质疑，一个简单的数组越界访问，为何要直接让程序崩溃？是不是有些小题大作了？
+
+如果有过 C 语言的经验，即使你越界了，问题不大，我依然尝试去访问，至于这个值是不是你想要的（100 号内存地址也有可能有值，只不过是其它变量或者程序的！），抱歉，不归我管，我只负责取，你要负责管理好自己的索引访问范围。
+
+上面这种情况被称为缓冲区溢出，并可能会导致安全漏洞，例如攻击者可以通过索引来访问到数组后面不被允许的数据。
+
+说实话，我宁愿程序崩溃，为什么？当你取到了一个不属于你的值，这在很多时候会导致程序上的逻辑 BUG！ 有编程经验的人都知道这种逻辑上的 BUG 是多么难被发现和修复！因此程序直接崩溃，然后告诉我们问题发生的位置，最后我们对此进行修复，这才是最合理的软件开发流程，而不是把问题藏着掖着：
+
+```bash
+thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+好的，现在成功知道问题发生的位置，但是如果我们想知道该问题之前经过了哪些调用环节，该怎么办？
+
+那就按照提示使用 `RUST_BACKTRACE=1 cargo run` 或 `$env:RUST_BACKTRACE=1 ; cargo run` 来再一次运行程序：
+```bash
+thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/std/src/panicking.rs:517:5
+   1: core::panicking::panic_fmt
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/core/src/panicking.rs:101:14
+   2: core::panicking::panic_bounds_check
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/core/src/panicking.rs:77:5
+   3: <usize as core::slice::index::SliceIndex<[T]>>::index
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/core/src/slice/index.rs:184:10
+   4: core::slice::index::<impl core::ops::index::Index<I> for [T]>::index
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/core/src/slice/index.rs:15:9
+   5: <alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/alloc/src/vec/mod.rs:2465:9
+   6: world_hello::main
+             at ./src/main.rs:4:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/59eed8a2aac0230a8b53e89d4e99d55912ba6b35/library/core/src/ops/function.rs:227:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+```
+上面的代码就是一次栈展开(也称栈回溯)，它包含了函数调用的顺序，当然按照逆序排列：最近调用的函数排在列表的最上方。因为咱们的 main 函数基本是最先调用的函数了，所以排在了倒数第二位，还有一个关注点，排在最顶部最后一个调用的函数是 `rust_begin_unwind`，该函数的目的就是进行栈展开，呈现这些列表信息给我们。
+
+要获取到栈回溯信息，你还需要开启 debug 标志，该标志在使用 `cargo run` 或者 `cargo build` 时自动开启（这两个操作默认是 Debug 运行方式）。同时，栈展开信息在不同操作系统或者 Rust 版本上也有所不同。
+
+
+#### panic 时的两种终止方式
+
+当出现 `panic!` 时，程序提供了两种方式来处理终止流程：栈展开和直接终止。
+
+其中，默认的方式就是 栈展开，这意味着 Rust 会回溯栈上数据和函数调用，因此也意味着更多的善后工作，好处是可以给出充分的报错信息和栈调用信息，便于事后的问题复盘。直接终止，顾名思义，不清理数据就直接退出程序，善后工作交与操作系统来负责。
+
+对于绝大多数用户，使用默认选择是最好的，但是当你关心最终编译出的二进制可执行文件大小时，那么可以尝试去使用直接终止的方式，例如下面的配置修改 `Cargo.toml` 文件，实现在 release 模式下遇到 panic 直接终止：
+
+```bash
+[profile.release]
+panic = 'abort'
+```
+
+#### 线程 panic 后，程序是否会终止？
+
+长话短说，如果是 main 线程，则程序会终止，如果是其它子线程，该线程会终止，但是不会影响 main 线程。因此，尽量不要在 main 线程中做太多任务，将这些任务交由子线程去做，就算子线程 panic 也不会导致整个程序的结束。
+
+这里涉及到当调用 `panic!` 宏时，它会:
+
+* 格式化 panic 信息，然后使用该信息作为参数，调用 `std::panic::panic_any()` 函数.
+* `panic_any` 会检查应用是否使用了 `panic hook`，如果使用了，该 hook 函数就会被调用（hook 是一个钩子函数，是外部代码设置的，用于在 panic 触发时，执行外部代码所需的功能）.
+* 当 hook 函数返回后，当前的线程就开始进行栈展开：从 panic_any 开始，如果寄存器或者栈因为某些原因信息错乱了，那很可能该展开会发生异常，最终线程会直接停止，展开也无法继续进行.
+* 展开的过程是一帧一帧的去回溯整个栈，每个帧的数据都会随之被丢弃，但是在展开过程中，你可能会遇到被用户标记为 catching 的帧（通过 `std::panic::catch_unwind()` 函数标记），此时用户提供的 catch 函数会被调用，展开也随之停止：当然，如果 catch 选择在内部调用 `std::panic::resume_unwind()` 函数，则展开还会继续。
+
+还有一种情况，在展开过程中，如果展开本身 panic 了，那展开线程会终止，展开也随之停止。
+
+一旦线程展开被终止或者完成，最终的输出结果是取决于哪个线程 `panic：`对于 main 线程，操作系统提供的终止功能 `core::intrinsics::abort()` 会被调用，最终结束当前的 panic 进程；如果是其它子线程，那么子线程就会简单的终止，同时信息会在稍后通过 `std::thread::join()` 进行收集。
+
+
