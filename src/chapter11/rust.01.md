@@ -165,3 +165,22 @@ panic = 'abort'
 一旦线程展开被终止或者完成，最终的输出结果是取决于哪个线程 `panic：`对于 main 线程，操作系统提供的终止功能 `core::intrinsics::abort()` 会被调用，最终结束当前的 panic 进程；如果是其它子线程，那么子线程就会简单的终止，同时信息会在稍后通过 `std::thread::join()` 进行收集。
 
 
+#### 何时该使用 panic!
+
+让我们大概罗列下何时适合使用 panic，也许经过之前的学习，你已经能够对 panic 的使用有了自己的看法，但是我们还是会罗列一些常见的用法来加深自己的理解。
+
+先看下`Result<T, E>` 这个枚举类型，它是用来表示函数的返回结果：
+```rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+当没有错误发生时，函数返回一个用 Result 类型包裹的值 `Ok(T)`，当错误时，返回一个 `Err(E)`。对于 Result 返回我们有很多处理方法，最简单粗暴的就是 unwrap 和 expect，这两个函数非常类似，我们以 unwrap 举例：
+```rust
+use std::net::IpAddr;
+let home: IpAddr = "127.0.0.1".parse().unwrap();
+```
+上面的 parse 方法试图将字符串 `"127.0.0.1"` 解析为一个 IP 地址类型 IpAddr，它返回一个 `Result<IpAddr, E>` 类型，如果解析成功，则把 `Ok(IpAddr)` 中的值赋给 home，如果失败，则不处理 Err(E)，而是直接 panic。
+
+因此 unwrap 简而言之：成功则返回值，失败则 panic，总之不进行任何错误处理。
