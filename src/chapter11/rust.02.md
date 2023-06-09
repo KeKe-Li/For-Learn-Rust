@@ -88,3 +88,71 @@ fn main() {
 代码很清晰，对打开文件后的 `Result<T, E>` 类型进行匹配取值，如果是成功，则将 Ok(file) 中存放的的文件句柄 file 赋值给 f，如果失败，则将 Err(error) 中存放的错误信息 error 使用 panic 抛出来，进而结束程序，这非常符合上文提到过的 panic 使用场景。
 
 好吧，也没有那么合理 `:)`.
+
+#### 对返回的错误进行处理
+
+直接 panic 还是过于粗暴，因为实际上 IO 的错误有很多种，我们需要对部分错误进行特殊处理，而不是所有错误都直接崩溃：
+```rust
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    let f = match f {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            ErrorKind::NotFound => match File::create("hello.txt") {
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => panic!("Problem opening the file: {:?}", other_error),
+        },
+    };
+}
+```
+上面代码在匹配出 error 后，又对 error 进行了详细的匹配解析，最终结果：
+
+如果是文件不存在错误 `ErrorKind::NotFound`，就创建文件，这里创建文件`File::create` 也是返回 Result，因此继续用 match 对其结果进行处理：创建成功，将新的文件句柄赋值给 f，如果失败，则 panic.
+剩下的错误，一律 panic.
+
+#### 失败就 panic: unwrap 和 expect
+
+在不需要处理错误的场景，例如写原型、示例时，我们不想使用 match 去匹配 `Result<T, E>` 以获取其中的 T 值，因为 match 的穷尽匹配特性，你总要去处理下 Err 分支。那么有没有办法简化这个过程？有，答案就是 unwrap 和 expect。
+
+它们的作用就是，如果返回成功，就将 Ok(T) 中的值取出来，如果失败，就直接 panic。
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt").unwrap();
+}
+```
+如果调用这段代码时 `hello.txt` 文件不存在，那么 unwrap 就将直接 panic：
+```rust
+thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: "No such file or directory" }', src/main.rs:4:37
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+expect 跟 unwrap 很像，也是遇到错误直接 panic, 但是会带上自定义的错误提示信息，相当于重载了错误打印的函数：
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt").expect("Failed to open hello.txt");
+}
+```
+报错如下：
+```rust
+thread 'main' panicked at 'Failed to open hello.txt: Os { code: 2, kind: NotFound, message: "No such file or directory" }', src/main.rs:4:37
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+可以看出，expect 相比 unwrap 能提供更精确的错误信息，在有些场景也会更加实用。
+
+
+
+
+
+
+
