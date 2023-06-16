@@ -150,9 +150,74 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 可以看出，expect 相比 unwrap 能提供更精确的错误信息，在有些场景也会更加实用。
 
+#### 传播错误
 
+们的程序几乎不太可能只有 A->B 形式的函数调用，一个设计良好的程序，一个功能涉及十几层的函数调用都有可能。而错误处理也往往不是哪里调用出错，就在哪里处理，实际应用中，大概率会把错误层层上传然后交给调用链的上游函数进行处理，错误传播将极为常见。
 
+例如以下函数从文件中读取用户名，然后将结果进行返回：
+```rust
+use std::fs::File;
+use std::io::{self, Read};
 
+fn read_username_from_file() -> Result<String, io::Error> {
+    // 打开文件，f是`Result<文件句柄,io::Error>`
+    let f = File::open("hello.txt");
 
+    let mut f = match f {
+        // 打开文件成功，将file句柄赋值给f
+        Ok(file) => file,
+        // 打开文件失败，将错误返回(向上传播)
+        Err(e) => return Err(e),
+    };
+    // 创建动态字符串s
+    let mut s = String::new();
+    // 从f文件句柄读取数据并写入s中
+    match f.read_to_string(&mut s) {
+        // 读取成功，返回Ok封装的字符串
+        Ok(_) => Ok(s),
+        // 将错误向上传播
+        Err(e) => Err(e),
+    }
+}
+```
+有几点值得注意：
+
+* 该函数返回一个 `Result<String, io::Error>` 类型，当读取用户名成功时，返回 `Ok(String)`，失败时，返回 `Err(io:Error)`.
+* `File::open` 和 `f.read_to_string` 返回的 `Result<T, E>` 中的 E 就是 `io::Error`
+由此可见，该函数将 `io::Error` 的错误往上进行传播，该函数的调用者最终会对 `Result<String,io::Error>` 进行再处理，至于怎么处理就是调用者的事，如果是错误，它可以选择继续向上传播错误，也可以直接 panic，亦或将具体的错误原因包装后写入 socket 中呈现给终端用户。
+
+但是上面的代码也有自己的问题，那就是太长了，我自认为也有那么一点点优秀，因此见不得这么啰嗦的代码，下面咱们来讲讲如何简化它。
+
+* 传播界的大明星: ?
+
+我们看看 ? 的排面：
+```rust
+use std::fs::File;
+use std::io;
+use std::io::Read;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut f = File::open("hello.txt")?;
+    let mut s = String::new();
+    f.read_to_string(&mut s)?;
+    Ok(s)
+}
+```
+看到没，这就是排面，相比前面的 match 处理错误的函数，代码直接减少了一半不止，但是，一山更比一山难，看不懂啊！
+
+其实 ? 就是一个宏，它的作用跟上面的 match 几乎一模一样：
+```rust
+let mut f = match f {
+    // 打开文件成功，将file句柄赋值给f
+    Ok(file) => file,
+    // 打开文件失败，将错误返回(向上传播)
+    Err(e) => return Err(e),
+};
+```
+如果结果是 Ok(T)，则把 T 赋值给 f，如果结果是 Err(E)，则返回该错误，所以 `?` 特别适合用来传播错误。
+
+虽然 `?` 和 match 功能一致，但是事实上 `?` 会更胜一筹。何解？
+
+想象一下，一个设计良好的系统中，肯定有自定义的错误特征，错误之间很可能会存在上下级关系，例如标准库中的 `std::io::Error` 和 `std::error::Error`，前者是 IO 相关的错误结构体，后者是一个最最通用的标准错误特征，同时前者实现了后者，因此 `std::io::Error` 可以转换为 `std:error::Error`。
 
 
