@@ -137,7 +137,7 @@ hello rust
 * 手动编译和运行项目
 ```markdown
 > cargo build
-    Finished dev [unoptimized + debuginfo] target(s) in 0.00s
+Finished dev [unoptimized + debuginfo] target(s) in 0.00s
 ```
 运行:
 ```markdown
@@ -162,8 +162,8 @@ hello, rust!
 `cargo check` 是我们在代码开发过程中最常用的命令，它的作用很简单：快速的检查一下代码能否编译通过。因此该命令速度会非常快，能节省大量的编译时间。
 ```markdown
 > cargo check         
-    Checking hello_rust v0.1.0 (/Users/keke/rust/hello_rust)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.43s
+Checking hello_rust v0.1.0 (/Users/keke/rust/hello_rust)
+Finished dev [unoptimized + debuginfo] target(s) in 0.43s
 ```
 
 #### Cargo.toml 和 Cargo.lock

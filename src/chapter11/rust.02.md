@@ -220,4 +220,46 @@ let mut f = match f {
 
 想象一下，一个设计良好的系统中，肯定有自定义的错误特征，错误之间很可能会存在上下级关系，例如标准库中的 `std::io::Error` 和 `std::error::Error`，前者是 IO 相关的错误结构体，后者是一个最最通用的标准错误特征，同时前者实现了后者，因此 `std::io::Error` 可以转换为 `std:error::Error`。
 
+明白了以上的错误转换，`?` 的更胜一筹就很好理解了，它可以自动进行类型提升（转换）：
+
+```rust
+fn open_file() -> Result<File, Box<dyn std::error::Error>> {
+    let mut f = File::open("hello.txt")?;
+    Ok(f)
+}
+```
+上面代码中 `File::open` 报错时返回的错误是 `std::io::Error` 类型，但是 `open_file` 函数返回的错误类型是 `std::error::Error` 的特征对象，可以看到一个错误类型通过 `?` 返回后，变成了另一个错误类型，这就是 `?` 的神奇之处。
+
+根本原因是在于标准库中定义的 From 特征，该特征有一个方法 from，用于把一个类型转成另外一个类型，? 可以自动调用该方法，然后进行隐式类型转换。因此只要函数返回的错误 `ReturnError` 实现了 `From<OtherError>` 特征，那么 `?` 就会自动把 `OtherError` 转换为 `ReturnError`。
+
+这种转换非常好用，意味着你可以用一个大而全的 `ReturnError` 来覆盖所有错误类型，只需要为各种子错误类型实现这种转换即可。
+
+强中自有强中手，一码更比一码短：
+
+```rust
+use std::fs::File;
+use std::io;
+use std::io::Read;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut s = String::new();
+
+    File::open("hello.txt")?.read_to_string(&mut s)?;
+
+    Ok(s)
+}
+```
+由此可见`?` 还能实现链式调用，`File::open` 遇到错误就返回，没有错误就将 Ok 中的值取出来用于下一个方法调用，简直太精妙了。
+
+```rust
+use std::fs;
+use std::io;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    // read_to_string是定义在std::io中的方法，因此需要在上面进行引用
+    fs::read_to_string("kk.txt")
+}
+```
+从文件读取数据到字符串中，是比较常见的操作，因此 Rust 标准库为我们提供了 `fs::read_to_string` 函数，该函数内部会打开一个文件、创建 String、读取文件内容最后写入字符串并返回.
+
 
