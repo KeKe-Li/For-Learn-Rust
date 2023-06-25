@@ -262,4 +262,58 @@ fn read_username_from_file() -> Result<String, io::Error> {
 ```
 从文件读取数据到字符串中，是比较常见的操作，因此 Rust 标准库为我们提供了 `fs::read_to_string` 函数，该函数内部会打开一个文件、创建 String、读取文件内容最后写入字符串并返回.
 
+* `?` 用于 Option 的返回
+
+而`?` 不仅仅可以用于 Result 的传播，还能用于 Option 的传播，再来回忆下 Option 的定义：
+
+```rust
+pub enum Option<T> {
+    Some(T),
+    None
+}
+```
+Result 通过 `?` 返回错误，那么 `Option` 就通过 `?` 返回 None：
+```rust
+fn first(arr: &[i32]) -> Option<&i32> {
+   let v = arr.get(0)?;
+   Some(v)
+}
+```
+上面的函数中，`arr.get` 返回一个 `Option<&i32>` 类型，因为 `?` 的使用，如果 get 的结果是 None，则直接返回 None，如果是 `Some(&i32)`，则把里面的值赋给 v。
+
+其实这个函数有些画蛇添足，完全可以写出更简单的版本：
+```rust
+fn first(arr: &[i32]) -> Option<&i32> {
+   arr.get(0)
+}
+```
+还有就是在链式调用中:
+```rust
+fn last_char_of_first_line(text: &str) -> Option<char> {
+    text.lines().next()?.chars().last()
+}
+```
+在链式调用中使用 `?` 提前返回 None 的用法， `.next` 方法返回的是 Option 类型：如果返回 `Some(&str)`，那么继续调用 chars 方法,如果返回 None，则直接从整个函数中返回 None，不再继续进行链式调用。
+
+* 新手用 ? 常会犯的错误
+
+初学者在用 `?` 时，老是会犯错，例如写出这样的代码：
+```rust
+fn first(arr: &[i32]) -> Option<&i32> {
+    arr.get(0)?
+}
+```
+这段代码无法通过编译，切记：`?` 操作符需要一个变量来承载正确的值，这个函数只会返回 `Some(&i32)` 或者 `None`，只有错误值能直接返回，正确的值不行，所以如果数组中存在 0 号元素，那么函数第二行使用 ? 后的返回类型为 `&i32` 而不是 `Some(&i32)`。
+
+因此 `?` 只能用于以下形式：
+```markdown
+let v = xxx()?;
+xxx()?.yyy()?;
+```
+
+
+
+
+
+
 
