@@ -311,6 +311,75 @@ let v = xxx()?;
 xxx()?.yyy()?;
 ```
 
+* 带返回值的 main 函数
+
+在了解了 `?` 的使用限制后，这段代码你很容易看出它无法编译：
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt")?;
+}
+```
+
+运行后会报错:
+```rust
+$ cargo run
+   ...
+   the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+ --> src/main.rs:4:48
+  |
+3 | fn main() {
+  | --------- this function should return `Result` or `Option` to accept `?`
+4 |     let greeting_file = File::open("hello.txt")?;
+  |                                                ^ cannot use the `?` operator in a function that returns `()`
+  |
+  = help: the trait `FromResidual<Result<Infallible, std::io::Error>>` is not implemented for `()`
+```
+因为 `?` 要求 `Result<T, E>` 形式的返回值，而 main 函数的返回是 ()，因此无法满足，那是不是就无解了呢？
+
+实际上 Rust 还支持另外一种形式的 main 函数：
+```rust
+use std::error::Error;
+use std::fs::File;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let f = File::open("hello.txt")?;
+
+    Ok(())
+}
+```
+
+这样就能使用 `?` 提前返回了，同时我们又一次看到了`Box<dyn Error>` 特征对象，因为 `std::error:Error` 是 Rust 中抽象层次最高的错误，其它标准库中的错误都实现了该特征，因此我们可以用该特征对象代表一切错误，就算 main 函数中调用任何标准库函数发生错误，都可以通过 `Box<dyn Error>` 这个特征对象进行返回。
+
+至于 main 函数可以有多种返回值，那是因为实现了 `std::process::Termination` 特征，目前为止该特征还没进入稳定版 Rust 中，也许未来你可以为自己的类型实现该特征！
+
+* try!
+
+在 `?` 横空出世之前( `Rust 1.13` )，Rust 开发者还可以使用 `try!` 来处理错误，该宏的大致定义如下：
+
+```rust
+macro_rules! try {
+    ($e:expr) => (match $e {
+        Ok(val) => val,
+        Err(err) => return Err(::std::convert::From::from(err)),
+    });
+}
+```
+简单看一下与 `?` 的对比:
+```rust
+//  `?`
+let x = function_with_error()?; // 若返回 Err, 则立刻返回；若返回 Ok(255)，则将 x 的值设置为 255
+
+// `try!()`
+let x = try!(function_with_error());
+```
+可以看出 `?` 的优势非常明显，何况 `?` 还能做链式调用。在当前版本中，我们要尽量避免使用 `try!`。
+
+
+
+
 
 
 
