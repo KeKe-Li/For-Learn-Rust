@@ -71,3 +71,47 @@ fn main() {
 
 Rust 提供了 cargo doc 的命令，可以用于把这些文档注释转换成 HTML 网页文件，最终展示给用户浏览，这样用户就知道这个包是做什么的以及该如何使用。
 
+* 文档行注释 `///`
+
+```markdown
+/// `add_one` 将指定值加1
+///
+/// # Examples
+///
+/// ```
+/// let arg = 5;
+/// let answer = my_crate::add_one(arg);
+///
+/// assert_eq!(6, answer);
+/// ```
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}
+```
+以上代码有几点需要注意：
+
+* 文档注释需要位于 lib 类型的包中，例如 `src/lib.rs` 中.
+* 文档注释可以使用 markdown语法！例如 `# Examples` 的标题，以及代码块高亮.
+* 被注释的对象需要使用 pub 对外可见，记住：文档注释是给用户看的，内部实现细节不应该被暴露出去.
+
+文档注释中的例子，为什看上去像是能运行的样子？竟然还是有 assert_eq 这种常用于测试目的的宏。
+
+* 文档块注释 `/** ... */`
+
+与代码注释一样，文档也有块注释，当注释内容多时，使用块注释可以减少 /// 的使用：
+
+```markdown
+/** `add_two` 将指定值加2
+
+
+```
+let arg = 5;
+let answer = my_crate::add_two(arg);
+
+assert_eq!(7, answer);
+```
+*/
+pub fn add_two(x: i32) -> i32 {
+    x + 2
+}
+```
