@@ -122,7 +122,7 @@ pub fn add_two(x: i32) -> i32 {
 
 当然，为了方便，我们使用 `cargo doc --open` 命令，可以在生成文档后，自动在浏览器中打开网页，最终效果如图所示：
 <p align="center">
-    <img width="100%" align="center" src="src/images/6.png" />
+    <img width="100%" align="center" src="src/images/7.png" />
 </p>
 
 非常棒，而且非常简单，这就是 Rust 工具链的强大之处。
@@ -136,3 +136,329 @@ pub fn add_two(x: i32) -> i32 {
 * Safety：如果函数使用 unsafe 代码，那么调用者就需要注意一些使用条件，以确保 unsafe 代码块的正常工作
 
 这些标题更多的是一种惯例，如果你非要用中文标题也没问题，但是最好在团队中保持同样的风格.
+
+
+#### 包和模块级别的注释
+
+除了函数、结构体等 Rust 项的注释，你还可以给包和模块添加注释，需要注意的是，这些注释要添加到包、模块的最上方！
+
+与之前的任何注释一样，包级别的注释也分为两种：行注释 `//!` 和块注释 `/*! ... */`。
+
+现在，为我们的包增加注释，在 `src/lib.rs` 包根的最上方，添加：
+
+```markdown
+/*! lib包是world_hello二进制包的依赖包，
+ 里面包含了compute等有用模块 */
+
+pub mod compute;
+```
+然后再为该包根的子模块 `src/compute.rs` 添加注释：
+```markdown
+//! 计算一些你口算算不出来的复杂算术题
+
+
+/// `add_one`将指定值加1
+///
+```
+运行 `cargo doc --open` 查看下效果：
+<p align="center">
+    <img width="100%" align="center" src="src/images/8.png" />
+</p>
+
+包模块注释，可以让用户从整体的角度理解包的用途，对于用户来说是非常友好的，就和一篇文章的开头一样，总是要对文章的内容进行大致的介绍，让用户在看的时候心中有数。
+
+至此，关于如何注释的内容，就结束了，那么注释还能用来做什么？可以玩出花来吗？答案是Yes.
+
+#### 文档测试(Doc Test)
+
+相信读者之前都写过单元测试用例，其中一个很头疼的问题就是，随着代码的进化，单元测试用例经常会失效，过段时间后(为何是过段时间？应该这么问，有几个开发喜欢写测试用例 =,=)，你发现需要连续修改不少处代码，才能让测试重新工作起来。然而，在 Rust 中，大可不必。
+
+在之前的 add_one 中，我们写的示例代码非常像是一个单元测试的用例，这是偶然吗？并不是。因为 Rust 允许我们在文档注释中写单元测试用例！方法就如同之前做的：
+
+```markdown
+/// `add_one` 将指定值加1
+///
+/// # Examples11
+///
+/// ```
+/// let arg = 5;
+/// let answer = world_hello::compute::add_one(arg);
+///
+/// assert_eq!(6, answer);
+/// ```
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}
+```
+以上的注释不仅仅是文档，还可以作为单元测试的用例运行，使用 `cargo test` 运行测试：
+
+```markdown
+Doc-tests world_hello
+
+running 2 tests
+test src/compute.rs - compute::add_one (line 8) ... ok
+test src/compute.rs - compute::add_two (line 22) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+```
+可以看到，文档中的测试用例被完美运行，而且输出中也明确提示了 `Doc-tests world_hello`，意味着这些测试的名字叫 `Doc test` 文档测试。
+
+需要注意的是，你可能需要使用类如 `world_hello::compute::add_one(arg)` 的完整路径来调用函数，因为测试是在另外一个独立的线程中运行的.
+
+* 造成 panic 的文档测试
+
+文档测试中的用例还可以造成 panic：
+```markdown
+/// # Panics
+///
+/// The function panics if the second argument is zero.
+///
+/// ```rust
+/// // panics on division by zero
+/// world_hello::compute::div(10, 0);
+/// ```
+pub fn div(a: i32, b: i32) -> i32 {
+    if b == 0 {
+        panic!("Divide-by-zero error");
+    }
+
+    a / b
+}
+```
+
+以上测试运行后会 panic：
+```markdown
+---- src/compute.rs - compute::div (line 38) stdout ----
+Test executable failed (exit code 101).
+
+stderr:
+thread 'main' panicked at 'Divide-by-zero error', src/compute.rs:44:9
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+如果想要通过这种测试，可以添加 `should_panic`：
+```markdown
+/// # Panics
+///
+/// The function panics if the second argument is zero.
+///
+/// ```rust,should_panic
+/// // panics on division by zero
+/// world_hello::compute::div(10, 0);
+/// ```
+```
+通过 `should_panic`，告诉 Rust 我们这个用例会导致 panic，这样测试用例就能顺利通过。
+
+* 保留测试，隐藏文档
+
+在某些时候，我们希望保留文档测试的功能，但是又要将某些测试用例的内容从文档中隐藏起来：
+```markdown
+/// ```
+/// # // 使用#开头的行会在文档中被隐藏起来，但是依然会在文档测试中运行
+/// # fn try_main() -> Result<(), String> {
+/// let res = world_hello::compute::try_div(10, 0)?;
+/// # Ok(()) // returning from try_main
+/// # }
+/// # fn main() {
+/// #    try_main().unwrap();
+/// #
+/// # }
+/// ```
+pub fn try_div(a: i32, b: i32) -> Result<i32, String> {
+    if b == 0 {
+        Err(String::from("Divide-by-zero"))
+    } else {
+        Ok(a / b)
+    }
+}
+```
+
+以上文档注释中，我们使用 # 将不想让用户看到的内容隐藏起来，但是又不影响测试用例的运行，最终用户将只能看到那行没有隐藏的 `let res = world_hello::compute::try_div(10, 0)?;`
+<p align="center">
+    <img width="100%" align="center" src="src/images/9.png" />
+</p>
+
+#### 文档注释中的代码跳转
+
+Rust 在文档注释中还提供了一个非常强大的功能，那就是可以实现对外部项的链接：
+
+* 跳转到标准库
+
+```markdown
+/// `add_one` 返回一个[`Option`]类型
+pub fn add_one(x: i32) -> Option<i32> {
+    Some(x + 1)
+}
+```
+
+此处的 [Option] 就是一个链接，指向了标准库中的 Option 枚举类型，有两种方式可以进行跳转:
+
+* 在 IDE 中，使用 Command + 鼠标左键(macOS)，CTRL + 鼠标左键(Windows).
+* 在文档中直接点击链接.
+
+再比如，还可以使用路径的方式跳转：
+```markdown
+use std::sync::mpsc::Receiver;
+
+/// [`Receiver<T>`]   [`std::future`].
+///
+///  [`std::future::Future`] [`Self::recv()`].
+pub struct AsyncReceiver<T> {
+    sender: Receiver<T>,
+}
+
+impl<T> AsyncReceiver<T> {
+    pub async fn recv() -> T {
+        unimplemented!()
+    }
+}
+```
+* 使用完整路径跳转到指定项
+
+除了跳转到标准库，你还可以通过指定具体的路径跳转到自己代码或者其它库的指定项，例如在 lib.rs 中添加以下代码：
+```markdown
+pub mod a {
+    /// `add_one` 返回一个[`Option`]类型
+    /// 跳转到[`crate::MySpecialFormatter`]
+    pub fn add_one(x: i32) -> Option<i32> {
+        Some(x + 1)
+    }
+}
+
+pub struct MySpecialFormatter;
+```
+使用 `crate::MySpecialFormatter` 这种路径就可以实现跳转到 `lib.rs` 中定义的结构体上。
+
+* 同名项的跳转
+
+如果遇到同名项，可以使用标示类型的方式进行跳转：
+
+```markdown
+/// 跳转到结构体  [`Foo`](struct@Foo)
+pub struct Bar;
+
+/// 跳转到同名函数 [`Foo`](fn@Foo)
+pub struct Foo {}
+
+/// 跳转到同名宏 [`foo!`]
+pub fn Foo() {}
+
+#[macro_export]
+macro_rules! foo {
+  () => {}
+}
+```
+
+#### 文档搜索别名
+
+Rust 文档支持搜索功能，我们可以为自己的类型定义几个别名，以实现更好的搜索展现，当别名命中时，搜索结果会被放在第一位：
+```markdown
+#[doc(alias = "x")]
+#[doc(alias = "big")]
+pub struct BigX;
+
+#[doc(alias("y", "big"))]
+pub struct BigY;
+```
+
+结果如下图所示：
+<p align="center">
+    <img width="100%" align="center" src="src/images/10.png" />
+</p>
+
+
+#### 示例
+
+示例主要包括将重点应用几个知识点：
+
+* 文档注释
+* 一个项目可以包含两个包：二进制可执行包和 lib 包（库包），它们的包根分别是 `src/main.rs` 和 `src/lib.rs`.
+* 在二进制包中引用 lib 包.
+* 使用 pub use 再导出 API，并观察文档.
+
+首先，使用 `cargo new art` 创建一个 `Package art`：
+
+```markdown
+Created binary (application) `art` package
+```
+
+系统提示我们创建了一个二进制 Package，根据之前内容，可以知道该 Package 包含一个同名的二进制包：包名为 art，包根为 `src/main.rs`，该包可以编译成二进制然后运行。
+
+现在，在 src 目录下创建一个 `lib.rs` 文件，同样，根据之前学习的知识，创建该文件等于又创建了一个库类型的包，包名也是 art，包根为 `src/lib.rs`，该包是是库类型的，因此往往作为依赖库被引入。
+
+将以下内容添加到 `src/lib.rs` 中：
+
+```markdown
+//! # Art
+//!
+//!  未来的艺术建模库，现在的调色库
+
+pub use self::kinds::PrimaryColor;
+pub use self::kinds::SecondaryColor;
+pub use self::utils::mix;
+
+pub mod kinds {
+    //! 定义颜色的类型
+
+    /// 主色
+    pub enum PrimaryColor {
+        Red,
+        Yellow,
+        Blue,
+    }
+
+    /// 副色
+    #[derive(Debug,PartialEq)]
+    pub enum SecondaryColor {
+        Orange,
+        Green,
+        Purple,
+    }
+}
+
+pub mod utils {
+    //! 实用工具，目前只实现了调色板
+    use crate::kinds::*;
+
+    /// 将两种主色调成副色
+    /// ```rust
+    /// use art::utils::mix;
+    /// use art::kinds::{PrimaryColor,SecondaryColor};
+    /// assert!(matches!(mix(PrimaryColor::Yellow, PrimaryColor::Blue), SecondaryColor::Green));
+    /// ```
+    pub fn mix(c1: PrimaryColor, c2: PrimaryColor) -> SecondaryColor {
+        SecondaryColor::Green
+    }
+}
+```
+
+在库包的包根 `src/lib.rs` 下，我们又定义了几个子模块，同时将子模块中的三个项通过 `pub use` 进行了再导出。
+
+接着，将下面内容添加到 `src/main.rs` 中：
+
+```markdown
+use art::kinds::PrimaryColor;
+use art::utils::mix;
+
+fn main() {
+    let blue = PrimaryColor::Blue;
+    let yellow = PrimaryColor::Yellow;
+    println!("{:?}",mix(blue, yellow));
+}
+```
+
+在二进制可执行包的包根 src/main.rs 下，我们引入了库包 art 中的模块项，同时使用 main 函数作为程序的入口，该二进制包可以使用 `cargo run` 运行：
+
+```markdown
+Green
+```
+
+至此，库包完美提供了用于调色的 API，二进制包引入这些 API 完美的实现了调色并打印输出。
+
+最后，再来看看文档长啥样：
+<p align="center">
+    <img width="100%" align="center" src="src/images/11.png" />
+</p>
+
+
+因此，在 Rust 中，注释分为三个主要类型：代码注释、文档注释、包和模块注释，每个注释类型都拥有两种形式：行注释和块注释，熟练掌握包模块和注释的知识，非常有助于我们创建工程性更强的项目。
+
