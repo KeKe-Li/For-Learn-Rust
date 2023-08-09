@@ -60,7 +60,78 @@ eprint!，eprintln!
 ```markdown
 eprintln!("Error: Could not complete task")
 ```
-它们仅应该被用于输出错误信息和进度信息，其它场景都应该使用 print! 系列。
+它们仅应该被用于输出错误信息和进度信息，其它场景都应该使用 `print!` 系列。
+
+
+#### {} 与
+
+与其它语言常用的 `%d`，`%s` 不同，Rust 特立独行地选择了 `{}` 作为格式化占位符，事实证明，这种选择非常正确，它帮助用户减少了很多使用成本，你无需再为特定的类型选择特定的占位符，统一用 {} 来替代即可，剩下的类型推导等细节只要交给 Rust 去做。
+
+与 `{}` 类似，`{:?}` 也是占位符：
+
+* `{}` 适用于实现了 `std::fmt::Display` 特征的类型，用来以更优雅、更友好的方式格式化文本，例如展示给用户.
+* `{:?}` 适用于实现了 `std::fmt::Debug` 特征的类型，用于调试场景.
+
+其实两者的选择很简单，当你在写代码需要调试时，使用 `{:?}`，剩下的场景，选择 `{}`。
+
+
+1. Debug 特征
+
+事实上，为了方便我们调试，大多数 Rust 类型都实现了 Debug 特征或者支持派生该特征：
+
+```markdown
+#[derive(Debug)]
+struct Person {
+    name: String,
+    age: u8
+}
+
+fn main() {
+    let i = 3.1415926;
+    let s = String::from("hello");
+    let v = vec![1, 2, 3];
+    let p = Person{name: "sunface".to_string(), age: 18};
+    println!("{:?}, {:?}, {:?}, {:?}", i, s, v, p);
+}
+```
+对于数值、字符串、数组，可以直接使用 `{:?}` 进行输出，但是对于结构体，需要派生Debug特征后，才能进行输出，总之很简单。
+
+2. Display 特征
+
+与大部分类型实现了 Debug 不同，实现了 Display 特征的 Rust 类型并没有那么多，往往需要我们自定义想要的格式化方式：
+```markdown
+let i = 3.1415926;
+let s = String::from("hello");
+let v = vec![1, 2, 3];
+let p = Person {
+    name: "sunface".to_string(),
+    age: 18,
+};
+println!("{}, {}, {}, {}", i, s, v, p);
+```
+运行后可以看到 v 和 p 都无法通过编译，因为没有实现 Display 特征，但是你又不能像派生 Debug 一般派生 Display，只能另寻他法：
+
+* 使用 `{:?}` 或 `{:#?}` .
+* 为自定义类型实现 Display 特征.
+* 使用 newtype 为外部类型实现 Display 特征.
+
+
+`{:#?}` 与 `{:?}` 几乎一样，唯一的区别在于它能更优美地输出内容：
+```markdown
+// {:?}
+[1, 2, 3], Person { name: "sunface", age: 18 }
+
+// {:#?}
+[
+    1,
+    2,
+    3,
+], Person {
+    name: "sunface",
+}
+```
+因此对于 Display 不支持的类型，可以考虑使用 `{:#?}` 进行格式化，虽然理论上它更适合进行调试输出。
+
 
 
 
