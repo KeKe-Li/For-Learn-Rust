@@ -133,6 +133,99 @@ println!("{}, {}, {}, {}", i, s, v, p);
 因此对于 Display 不支持的类型，可以考虑使用 `{:#?}` 进行格式化，虽然理论上它更适合进行调试输出。
 
 
+* 为自定义类型实现 Display 特征
 
+如果你的类型是定义在当前作用域中的，那么可以为其实现 Display 特征，即可用于格式化输出：
 
+```markdown
+struct Person {
+    name: String,
+    age: u8,
+}
+
+use std::fmt;
+impl fmt::Display for Person {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "真棒哈哈!",
+            self.name, self.age
+        )
+    }
+}
+fn main() {
+    let p = Person {
+        name: "sunface".to_string(),
+        age: 18,
+    };
+    println!("{}", p);
+}
+```
+
+如上所示，只要实现 Display 特征中的 fmt 方法，即可为自定义结构体 Person 添加自定义输出：
+```markdown
+真棒哈哈!
+```
+
+* 为外部类型实现 Display 特征
+
+在 Rust 中，无法直接为外部类型实现外部特征，但是可以使用newtype解决此问题：
+```markdown
+struct Array(Vec<i32>);
+
+use std::fmt;
+impl fmt::Display for Array {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "数组是：{:?}", self.0)
+    }
+}
+fn main() {
+    let arr = Array(vec![1, 2, 3]);
+    println!("{}", arr);
+}
+```
+
+Array 就是我们的 newtype，它将想要格式化输出的 Vec 包裹在内，最后只要为 Array 实现 Display 特征，即可进行格式化输出：
+```markdown
+数组是：[1, 2, 3]
+```
+
+#### 位置参数
+
+除了按照依次顺序使用值去替换占位符之外，还能让指定位置的参数去替换某个占位符，例如 {1}，表示用第二个参数替换该占位符(索引从 0 开始)：
+```markdown
+fn main() {
+    println!("{}{}", 1, 2); // =>"12"
+    println!("{1}{0}", 1, 2); // =>"21"
+    // => Alice, this is Bob. Bob, this is Alice
+    println!("{0}, this is {1}. {1}, this is {0}", "Alice", "Bob");
+    println!("{1}{}{0}{}", 1, 2); // => 2112
+}
+```
+
+#### 具名参数
+
+除了像上面那样指定位置外，我们还可以为参数指定名称：
+
+```markdown
+fn main() {
+    println!("{argument}", argument = "test"); // => "test"
+    println!("{name} {}", 1, name = 2); // => "2 1"
+    println!("{a} {c} {b}", a = "a", b = 'b', c = 3); // => "a 3 b"
+}
+```
+需要注意的是：带名称的参数必须放在不带名称参数的后面，例如下面代码将报错：
+```markdown
+println!("{abc} {1}", abc = "def", 2);
+```
+
+```markdown
+error: positional arguments cannot follow named arguments
+--> src/main.rs:4:36
+|
+4 | println!("{abc} {1}", abc = "def", 2);
+|                             -----  ^ positional arguments must be before named arguments
+|                             |
+|                             named argument
+```
 
