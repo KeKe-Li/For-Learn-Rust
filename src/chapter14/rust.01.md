@@ -289,3 +289,162 @@ fn main() {
     println!("Hello {:05}!", -5);
 }
 ```
+
+#### 对齐
+
+```markdown
+fn main() {
+    // 以下全部都会补齐5个字符的长度
+    // 左对齐 => Hello x    !
+    println!("Hello {:<5}!", "x");
+    // 右对齐 => Hello     x!
+    println!("Hello {:>5}!", "x");
+    // 居中对齐 => Hello   x  !
+    println!("Hello {:^5}!", "x");
+
+    // 对齐并使用指定符号填充 => Hello x&&&&!
+    // 指定符号填充的前提条件是必须有对齐字符
+    println!("Hello {:&<5}!", "x");
+}
+```
+
+#### 精度
+
+精度可以用于控制浮点数的精度或者字符串的长度
+
+```markdown
+fn main() {
+    let v = 3.1415926;
+    // 保留小数点后两位 => 3.14
+    println!("{:.2}", v);
+    // 带符号保留小数点后两位 => +3.14
+    println!("{:+.2}", v);
+    // 不带小数 => 3
+    println!("{:.0}", v);
+    // 通过参数来设定精度 => 3.1416，相当于{:.4}
+    println!("{:.1$}", v, 4);
+
+    let s = "hi我是Sunface孙飞";
+    // 保留字符串前三个字符 => hi我
+    println!("{:.3}", s);
+    // {:.*}接收两个参数，第一个是精度，第二个是被格式化的值 => Hello abc!
+    println!("Hello {:.*}!", 3, "abcdefg");
+}
+```
+
+#### 进制
+
+可以使用 # 号来控制数字的进制输出：
+```markdown
+#b, 二进制
+#o, 八进制
+#x, 小写十六进制
+#X, 大写十六进制
+x, 不带前缀的小写十六进制
+```
+
+
+```markdown
+fn main() {
+    // 二进制 => 0b11011!
+    println!("{:#b}!", 27);
+    // 八进制 => 0o33!
+    println!("{:#o}!", 27);
+    // 十进制 => 27!
+    println!("{}!", 27);
+    // 小写十六进制 => 0x1b!
+    println!("{:#x}!", 27);
+    // 大写十六进制 => 0x1B!
+    println!("{:#X}!", 27);
+
+    // 不带前缀的十六进制 => 1b!
+    println!("{:x}!", 27);
+
+    // 使用0填充二进制，宽度为10 => 0b00011011!
+    println!("{:#010b}!", 27);
+}
+```
+
+#### 指数
+
+```markdown
+fn main() {
+    println!("{:2e}", 1000000000); // => 1e9
+    println!("{:2E}", 1000000000); // => 1E9
+}
+```
+
+#### 指针地址
+
+```markdown
+let v= vec![1, 2, 3];
+println!("{:p}", v.as_ptr()) // => 0x600002324050
+```
+
+#### 转义
+
+有时需要输出 `{`和`}`，但这两个字符是特殊字符，需要进行转义：
+
+```markdown
+fn main() {
+    // "{{" 转义为 '{'   "}}" 转义为 '}'   "\"" 转义为 '"'
+    // => Hello "{World}" 
+    println!(" Hello \"{{World}}\" ");
+
+    // 下面代码会报错，因为占位符{}只有一个右括号}，左括号被转义成字符串的内容
+    // println!(" {{ Hello } ");
+    // 也不可使用 '\' 来转义 "{}"
+    // println!(" \{ Hello \} ")
+}
+```
+
+#### 在格式化字符串时捕获环境中的值（Rust 1.58 新增）
+
+在以前，想要输出一个函数的返回值，你需要这么做：
+```markdown
+fn get_person() -> String {
+    String::from("sunface")
+}
+fn main() {
+    let p = get_person();
+    println!("Hello, {}!", p);                // implicit position
+    println!("Hello, {0}!", p);               // explicit index
+    println!("Hello, {person}!", person = p);
+}
+```
+
+问题倒也不大，但是一旦格式化字符串长了后，就会非常冗余，而在 1.58 后，我们可以这么写：
+```markdown
+fn get_person() -> String {
+    String::from("sunface")
+}
+fn main() {
+    let person = get_person();
+    println!("Hello, {person}!");
+}
+```
+是不是清晰、简洁了很多？甚至还可以将环境中的值用于格式化参数:
+
+```markdown
+let (width, precision) = get_format();
+for (name, score) in get_scores() {
+  println!("{name}: {score:width$.precision$}");
+}
+```
+但也有局限，它只能捕获普通的变量，对于更复杂的类型（例如表达式），可以先将它赋值给一个变量或使用以前的 name = expression 形式的格式化参数。 目前除了 panic! 外，其它接收格式化参数的宏，都可以使用新的特性。对于 panic! 而言，如果还在使用 2015版本 或 2018版本，那 panic!("{ident}") 依然会被当成 正常的字符串来处理，同时编译器会给予 warn 提示。而对于 2021版本 ，则可以正常使用:
+
+```markdown
+fn get_person() -> String {
+    String::from("sunface")
+}
+fn main() {
+    let person = get_person();
+    panic!("Hello, {person}!");
+}
+```
+输出:
+```markdown
+thread 'main' panicked at 'Hello, sunface!', src/main.rs:6:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
