@@ -202,3 +202,61 @@ impl<'a: 'b, 'b> ImportantExcerpt<'a> {
 }
 ```
 上面的例子中必须添加约束 `'a: 'b` 后，才能成功编译，因为 `self.part` 的生命周期与 self的生命周期一致，将 `&'a` 类型的生命周期强行转换为 `&'b` 类型，会报错，只有在 `'a >= 'b` 的情况下，`'a` 才能转换成 `'b`。
+
+
+#### 闭包函数的消除规则
+
+先来看一段简单的代码：
+```markdown
+fn fn_elision(x: &i32) -> &i32 { x }
+let closure_slision = |x: &i32| -> &i32 { x };
+```
+运行结果:
+```markdown
+error: lifetime may not live long enough
+  --> src/main.rs:39:39
+   |
+39 |     let closure = |x: &i32| -> &i32 { x }; // fails
+   |                       -        -      ^ returning this value requires that `'1` must outlive `'2`
+   |                       |        |
+   |                       |        let's call the lifetime of this reference `'2`
+   |                       let's call the lifetime of this reference `'1`
+
+```
+报错了，明明两个一模一样功能的函数，一个正常编译，一个却报错，错误原因是编译器无法推测返回的引用和传入的引用谁活得更久。
+
+这里我们应该都记得这样一条生命周期消除规则：如果函数参数中只有一个引用类型，那该引用的生命周期会被自动分配给所有的返回引用。我们当前的情况完美符合， function 函数的顺利编译通过，就充分说明了问题。
+
+先给出一个结论：这个问题，可能很难被解决，建议大家遇到后，还是老老实实用正常的函数，不要秀闭包了。
+
+对于函数的生命周期而言，它的消除规则之所以能生效是因为它的生命周期完全体现在签名的引用类型上，在函数体中无需任何体现：
+```markdown
+fn fn_elision(x: &i32) -> &i32 {..}
+```
+
+因此编译器可以做各种编译优化，也很容易根据参数和返回值进行生命周期的分析，最终得出消除规则。
+
+可是闭包，并没有函数那么简单，它的生命周期分散在参数和闭包函数体中(主要是它没有确切的返回值签名)：
+
+```markdown
+let closure_slision = |x: &i32| -> &i32 { x };
+```
+编译器就必须深入到闭包函数体中，去分析和推测生命周期，复杂度因此急剧提升：试想一下，编译器该如何从复杂的上下文中分析出参数引用的生命周期和闭包体中生命周期的关系？
+
+由于上述原因(当然，实际情况复杂的多)，Rust 语言开发者目前其实是有意针对函数和闭包实现了两种不同的生命周期消除规则。
+
+```markdown
+用 Fn 特征解决闭包生命周期
+
+fn main() {
+   let closure_slision = fun(|x: &i32| -> &i32 { x });
+   assert_eq!(*closure_slision(&45), 45);
+   // Passed !
+}
+
+fn fun<T, F: Fn(&T) -> &T>(f: F) -> F {
+   f
+}
+```
+
+
