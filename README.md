@@ -91,7 +91,6 @@ rustc 1.53.0
 
 中国科学技术大学镜像源包含[rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
 
-
 #### Rust使用工具
 
 在使用Rust开发过程中常常是用到的工具有`rustc`, `rust-src`,`cargo`，这些都可以使用rustup进行管理。
@@ -124,6 +123,7 @@ cargo在创建项目的时候，cargo 默认就创建 bin 类型的项目，Rust
 有两种方式可以运行项目：
 
 * cargo run
+
 ```markdown
 > sudo cargo run main.rs
     Blocking waiting for file lock on package cache
@@ -135,11 +135,13 @@ hello rust
 `cargo run` 对项目进行编译，然后再运行，实际它上等同于运行了两个指令,等同于手动编译运行。
 
 * 手动编译和运行项目
+
 ```markdown
 > cargo build
 Finished dev [unoptimized + debuginfo] target(s) in 0.00s
 ```
 运行:
+
 ```markdown
 > /target/debug/hello_rust
 hello, rust!
@@ -147,11 +149,13 @@ hello, rust!
 从这里可以看出我们运行的是 debug 模式，在这种模式下，代码的编译速度会非常快，但是呢运行速度就慢了. 原因是，在 debug 模式下，Rust 编译器不会做任何的优化，只为了尽快的编译完成，让你的开发流程更加顺畅。
 
 所以呢我们也可以选择:
+
 ```markdown
 cargo run --release
 cargo build --release
 ```
 试着运行一下我们高性能的 release 程序：
+
 ```markdown
 > ./target/release/hello_rust
 hello, rust!
@@ -203,7 +207,6 @@ hammer = { version = "0.5.0"}
 color = { git = "https://github.com/bjz/color-rs" }
 geometry = { path = "crates/geometry" }
 ```
-
 #### 依赖包下载代理
 
 Rust依赖库的地址是 crates.io，是由 Rust 官方搭建的镜像下载和管理服务。
@@ -230,7 +233,6 @@ registry = "git://mirrors.ustc.edu.cn/crates.io-index"
 #### Rust实战开始
 
 Rust这块主要从基础数据结构，语法和使用，然后结合damo一起来学习！
-
 
 #### 参考
 
