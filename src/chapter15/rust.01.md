@@ -259,4 +259,128 @@ fn fun<T, F: Fn(&T) -> &T>(f: F) -> F {
 }
 ```
 
+#### NLL (Non-Lexical Lifetime)
+
+简单来说就是：引用的生命周期正常来说应该从借用开始一直持续到作用域结束，但是这种规则会让多引用共存的情况变得更复杂：
+```markdown
+fn main() {
+   let mut s = String::from("hello");
+
+    let r1 = &s;
+    let r2 = &s;
+    println!("{} and {}", r1, r2);
+    // 新编译器中，r1,r2作用域在这里结束
+
+    let r3 = &mut s;
+    println!("{}", r3);
+}
+```
+按照上述规则，这段代码将会报错，因为 r1 和 r2 的不可变引用将持续到 main 函数结束，而在此范围内，我们又借用了 r3 的可变引用，这违反了借用的规则：要么多个不可变借用，要么一个可变借用。
+
+好在，该规则从 1.31 版本引入 NLL 后，就变成了：引用的生命周期从借用处开始，一直持续到最后一次使用的地方。
+
+按照最新的规则，我们再来分析一下上面的代码。r1 和 r2 不可变借用在 println! 后就不再使用，因此生命周期也随之结束，那么 r3 的借用就不再违反借用的规则，皆大欢喜。
+
+再来看一段关于 NLL 的代码解释：
+```markdown
+let mut u = 0i32;
+let mut v = 1i32;
+let mut w = 2i32;
+
+// lifetime of `a` = α ∪ β ∪ γ
+let mut a = &mut u;     // --+ α. lifetime of `&mut u`  --+ lexical "lifetime" of `&mut u`,`&mut u`, `&mut w` and `a`
+use(a);                 //   |                            |
+*a = 3; // <-----------------+                            |
+...                     //                                |
+a = &mut v;             // --+ β. lifetime of `&mut v`    |
+use(a);                 //   |                            |
+*a = 4; // <-----------------+                            |
+...                     //                                |
+a = &mut w;             // --+ γ. lifetime of `&mut w`    |
+use(a);                 //   |                            |
+*a = 5; // <-----------------+ <--------------------------+
+```
+这段代码一目了然，a 有三段生命周期：α，β，γ，每一段生命周期都随着当前值的最后一次使用而结束。
+
+在实际项目中，NLL 规则可以大幅减少引用冲突的情况，极大的便利了用户，因此广受欢迎，最终该规则甚至演化成一个独立的项目，未来可能会进一步简化我们的使用.
+
+#### Reborrow 再借用
+
+学完 NLL 后，我们就有了一定的基础，可以继续学习关于借用和生命周期的一个高级内容：再借用。
+
+先来看一段代码：
+
+```markdown
+#[derive(Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+impl Point {
+    fn move_to(&mut self, x: i32, y: i32) {
+        self.x = x;
+        self.y = y;
+    }
+}
+
+fn main() {
+    let mut p = Point { x: 0, y: 0 };
+    let r = &mut p;
+    let rr: &Point = &*r;
+
+    println!("{:?}", rr);
+    r.move_to(10, 10);
+    println!("{:?}", r);
+}
+```
+以上代码，大家可能会觉得可变引用 r 和不可变引用 rr 同时存在会报错吧？但是事实上并不会，原因在于 rr 是对 r 的再借用。
+
+对于再借用而言，rr 再借用时不会破坏借用规则，但是你不能在它的生命周期内再使用原来的借用 r，来看看对上段代码的分析：
+```markdown
+fn main() {
+    let mut p = Point { x: 0, y: 0 };
+    let r = &mut p;
+    // reborrow! 此时对`r`的再借用不会导致跟上面的借用冲突
+    let rr: &Point = &*r;
+
+    // 再借用`rr`最后一次使用发生在这里，在它的生命周期中，我们并没有使用原来的借用`r`，因此不会报错
+    println!("{:?}", rr);
+
+    // 再借用结束后，才去使用原来的借用`r`
+    r.move_to(10, 10);
+    println!("{:?}", r);
+}
+```
+再来看一个例子：
+```markdown
+use std::vec::Vec;
+fn read_length(strings: &mut Vec<String>) -> usize {
+   strings.len()
+}
+```
+如上所示，函数体内对参数的二次借用也是典型的 Reborrow 场景。
+
+那么下面让我们来做件坏事，破坏这条规则，使其报错：
+```markdown
+fn main() {
+    let mut p = Point { x: 0, y: 0 };
+    let r = &mut p;
+    let rr: &Point = &*r;
+
+    r.move_to(10, 10);
+
+    println!("{:?}", rr);
+
+    println!("{:?}", r);
+}
+```
+
+果然，破坏永远比重建简单 `:)` 只需要在 rr 再借用的生命周期内使用一次原来的借用 r 即可！
+
+
+
+
+
+
 
