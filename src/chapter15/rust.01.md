@@ -378,9 +378,26 @@ fn main() {
 
 果然，破坏永远比重建简单 `:)` 只需要在 rr 再借用的生命周期内使用一次原来的借用 r 即可！
 
+#### 生命周期消除规则补充
 
+impl 块消除
+```rust
+impl<'a> Reader for BufReader<'a> {
+    // methods go here
+    // impl内部实际上没有用到'a
+}
+```
 
+如果你以前写的impl块长上面这样，同时在 impl 内部的方法中，根本就没有用到 'a，那就可以写成下面的代码形式。
+```rust
+impl Reader for BufReader<'_> {
+    // methods go here
+}
+```
 
+`'_` 生命周期表示 BufReader 有一个不使用的生命周期，我们可以忽略它，无需为它创建一个名称。
+
+既然用不到 `'a`，为何还要写出来？其实呢生命周期参数也是类型的一部分，因此 `BufReader<'a>` 是一个完整的类型，在实现它的时候，你不能把 `'a `给丢了！
 
 
 
