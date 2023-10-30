@@ -49,7 +49,7 @@ Rust 为 mac 用户提供了两种安装方式：
 Darwin MacBook-Pro.local 19.6.0 Darwin Kernel Version 19.6.0: Tue Nov 10 00:10:30 PST 2020; root:xnu-6153.141.10~1/RELEASE_X86_64 x86_64
 ```
 
-可以看到是`x86_64`是64的系统，可以在这里下载[rust安装包](https://static.rust-lang.org/dist/rust-1.5.0-x86_64-apple-darwin.pkg)。
+可以看到是`x86_64`是64的系统，可以在这里下载[rust安装包](https://static.rust-lang.org/dist/rust-1.73.0-x86_64-apple-darwin.pkg)。
 
 2. 命令行一键安装：
 
@@ -90,6 +90,11 @@ rustc 1.53.0
 如果你不想安装 Rust 在你的电脑上，但是你还是像尝试一下 rust，那么这里有一个在线的环境：[play-rust](http://play.rust-lang.org/) 。
 
 中国科学技术大学镜像源包含[rust-static](http://mirrors.ustc.edu.cn/rust-static/)。
+
+此外如果你觉得你本地已经有的rust版本过低了，你可以升级：
+```bash
+rustup update
+```
 
 #### Rust使用工具
 
