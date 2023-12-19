@@ -81,3 +81,105 @@ fn main() {
 * `&'static` 的引用确实可以和程序活得一样久，因为我们通过 `get_str_at_location` 函数直接取到了对应的字符串.
 * 持有 `&'static` 引用的变量，它的生命周期受到作用域的限制，大家务必不要搞混了.
 
+#### T: 'static
+
+相比起来，这种形式的约束就有些复杂了。
+
+首先，在以下两种情况下，`T: 'static 与 &'static` 有相同的约束：T 必须活得和程序一样久。
+
+```markdown
+use std::fmt::Debug;
+
+fn print_it<T: Debug + 'static>( input: T) {
+    println!( "'static value passed in is: {:?}", input );
+}
+
+fn print_it1( input: impl Debug + 'static ) {
+    println!( "'static value passed in is: {:?}", input );
+}
+
+
+
+fn main() {
+    let i = 5;
+
+    print_it(&i);
+    print_it1(&i);
+}
+```
+
+以上代码会报错，原因很简单: `&i` 的生命周期无法满足 `'static` 的约束，如果大家将 i 修改为常量，那自然一切 OK。
+
+见证奇迹的时候，请不要眨眼，现在我们来稍微修改下 `print_it` 函数:
+
+```markdown
+use std::fmt::Debug;
+
+fn print_it<T: Debug + 'static>( input: &T) {
+    println!( "'static value passed in is: {:?}", input );
+}
+
+fn main() {
+    let i = 5;
+
+    print_it(&i);
+}
+```
+这段代码竟然不报错了！原因在于我们约束的是 T，但是使用的却是它的引用 &T，换而言之，我们根本没有直接使用 T，因此编译器就没有去检查 T 的生命周期约束！它只要确保 &T 的生命周期符合规则即可，在上面代码中，它自然是符合的。
+
+再来看一个例子:
+```markdown
+use std::fmt::Display;
+
+fn main() {
+  let r1;
+  let r2;
+  {
+    static STATIC_EXAMPLE: i32 = 42;
+    r1 = &STATIC_EXAMPLE;
+    let x = "&'static str";
+    r2 = x;
+    // r1 和 r2 持有的数据都是 'static 的，因此在花括号结束后，并不会被释放
+  }
+
+  println!("&'static i32: {}", r1); // -> 42
+  println!("&'static str: {}", r2); // -> &'static str
+
+  let r3: &str;
+
+  {
+    let s1 = "String".to_string();
+
+    // s1 虽然没有 'static 生命周期，但是它依然可以满足 T: 'static 的约束
+    // 充分说明这个约束是多么的弱。。
+    static_bound(&s1);
+
+    // s1 是 String 类型，没有 'static 的生命周期，因此下面代码会报错
+    r3 = &s1;
+
+    // s1 在这里被 drop
+  }
+  println!("{}", r3);
+}
+
+fn static_bound<T: Display + 'static>(t: &T) {
+  println!("{}", t);
+}
+```
+#### static 到底针对谁？
+
+引用指向的数据，而引用本身是要遵循其作用域范围的，我们来简单验证下：
+```markdown
+fn main() {
+    {
+        let static_string = "I'm in read-only memory";
+        println!("static_string: {}", static_string);
+
+        // 当 `static_string` 超出作用域时，该引用不能再被使用，但是数据依然会存在于 binary 所占用的内存中
+    }
+
+    println!("static_string reference remains alive: {}", static_string);
+}
+```
+以上代码不出所料会报错，原因在于虽然字符串字面量 `"I'm in read-only memory"` 的生命周期是 `'static`，但是持有它的引用并不是，它的作用域在内部花括号 `}` 处就结束了。
+
