@@ -49,6 +49,117 @@ fn main() {
 
 #### 使用闭包来简化代码
 
-* 传统函数实现
+* 闭包实
 
-* 闭包实现
+```markdown
+use std::thread;
+use std::time::Duration;
+
+fn workout(intensity: u32, random_number: u32) {
+let action = || {
+println!("muuuu.....");
+thread::sleep(Duration::from_secs(2));
+intensity
+};
+
+    if intensity < 25 {
+        println!(
+            "今天活力满满，先做 {} 个俯卧撑!",
+            action()
+        );
+        println!(
+            "旁边有人在看，再来 {} 组卧推!",
+            action()
+        );
+    } else if random_number == 3 {
+        println!("昨天练过度了，今天还是休息下吧！");
+    } else {
+        println!(
+            "昨天练过度了，今天干干有氧，跑步 {} 分钟!",
+            action()
+        );
+    }
+}
+
+fn main() {
+// 动作次数
+let intensity = 10;
+// 随机值用来决定某个选择
+let random_number = 7;
+
+    // 开始健身
+    workout(intensity, random_number);
+}
+```
+
+在上面代码中，无论你要修改什么，只要修改闭包 action 的实现即可，其它地方只负责调用，完美解决了我们的问题！
+
+Rust 闭包在形式上借鉴了 Smalltalk 和 Ruby 语言，与函数最大的不同就是它的参数是通过 `|parm1|` 的形式进行声明，如果是多个参数就 `|param1, param2,...|`， 下面给出闭包的形式定义：
+```markdown
+|param1, param2,...| {
+    语句1;
+    语句2;
+    返回表达式
+}
+```
+如果只有一个返回表达式的话，定义可以简化为：
+```markdown
+|param1| 返回表达式
+```
+
+上例中还有两点值得注意：
+
+闭包中最后一行表达式返回的值，就是闭包执行后的返回值，因此 action() 调用返回了 intensity 的值 10.
+
+`let action = ||...` 只是把闭包赋值给变量 action，并不是把闭包执行后的结果赋值给 action，因此这里 action 就相当于闭包函数，可以跟函数一样进行调用：action().
+
+#### 闭包的类型推导
+
+Rust 是静态语言，因此所有的变量都具有类型，但是得益于编译器的强大类型推导能力，在很多时候我们并不需要显式地去声明类型，但是显然函数并不在此列，必须手动为函数的所有参数和返回值指定类型，原因在于函数往往会作为 API 提供给你的用户，因此你的用户必须在使用时知道传入参数的类型和返回值类型。
+
+与函数相反，闭包并不会作为 API 对外提供，因此它可以享受编译器的类型推导能力，无需标注参数和返回值的类型。
+
+为了增加代码可读性，有时候我们会显式地给类型进行标注，出于同样的目的，也可以给闭包标注类型：
+
+```markdown
+let sum = |x: i32, y: i32| -> i32 {
+    x + y
+}
+```
+
+与之相比，不标注类型的闭包声明会更简洁些：`let sum = |x, y| x + y`，需要注意的是，针对 sum 闭包，如果你只进行了声明，但是没有使用，编译器会提示你为 x, y 添加类型标注，因为它缺乏必要的上下文：
+
+```markdown
+let sum  = |x, y| x + y;
+let v = sum(1, 2);
+```
+
+这里我们使用了 sum，同时把 1 传给了 x，2 传给了 y，因此编译器才可以推导出 x,y 的类型为 i32。
+
+下面展示了同一个功能的函数和闭包实现形式：
+```markdown
+fn  add_one_v1   (x: u32) -> u32 { x + 1 }
+let add_one_v2 = |x: u32| -> u32 { x + 1 };
+let add_one_v3 = |x|             { x + 1 };
+let add_one_v4 = |x|               x + 1  ;
+```
+可以看出第一行的函数和后面的闭包其实在形式上是非常接近的，同时三种不同的闭包也展示了三种不同的使用方式：省略参数、返回值类型和花括号对。
+
+虽然类型推导很好用，但是它不是泛型，当编译器推导出一种类型后，它就会一直使用该类型：
+```markdown
+let example_closure = |x| x;
+
+let s = example_closure(String::from("hello"));
+let n = example_closure(5);
+```
+首先，在 s 中，编译器为 x 推导出类型 String，但是紧接着 n 试图用 5 这个整型去调用闭包，跟编译器之前推导的 String 类型不符，因此报错：
+```markdown
+error[E0308]: mismatched types
+ --> src/main.rs:5:29
+  |
+5 |     let n = example_closure(5);
+  |                             ^
+  |                             |
+  |                             expected struct `String`, found integer // 期待String类型，却发现一个整数
+  |                             help: try using a conversion method: `5.to_string()`
+```
