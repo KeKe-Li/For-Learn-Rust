@@ -163,3 +163,61 @@ error[E0308]: mismatched types
   |                             expected struct `String`, found integer // 期待String类型，却发现一个整数
   |                             help: try using a conversion method: `5.to_string()`
 ```
+
+#### 结构体中的闭包
+
+假设我们要实现一个简易缓存，功能是获取一个值，然后将其缓存起来，那么可以这样设计：
+
+* 一个闭包用于获取值
+* 一个变量，用于存储该值
+
+可以使用结构体来代表缓存对象，最终设计如下：
+```markdown
+struct Cacher<T>
+where
+    T: Fn(u32) -> u32,
+{
+    query: T,
+    value: Option<u32>,
+}
+```
+
+Fn(u32)这个，可以看得出这一长串是 T 的特征约束，再结合之前的已知信息：query 是一个闭包，大概可以推测出，Fn(u32) -> u32 是一个特征，用来表示 T 是一个闭包类型。
+
+那为什么不用具体的类型来标注 query 呢？原因很简单，每一个闭包实例都有独属于自己的类型，即使于两个签名一模一样的闭包，它们的类型也是不同的，因此你无法用一个统一的类型来标注 query 闭包。
+
+而标准库提供的 Fn 系列特征，再结合特征约束，就能很好的解决了这个问题. T: Fn(u32) -> u32 意味着 query 的类型是 T，该类型必须实现了相应的闭包特征 Fn(u32) -> u32。从特征的角度来看它长得非常反直觉，但是如果从闭包的角度来看又极其符合直觉，不得不佩服 Rust 团队的鬼才设计。。。
+
+特征 Fn(u32) -> u32 从表面来看，就对闭包形式进行了显而易见的限制：该闭包拥有一个u32类型的参数，同时返回一个u32类型的值。
+
+需要注意的是，其实 Fn 特征不仅仅适用于闭包，还适用于函数，因此上面的 query 字段除了使用闭包作为值外，还能使用一个具名的函数来作为它的值.
+
+接着，为缓存实现方法：
+```markdown
+impl<T> Cacher<T>
+where
+    T: Fn(u32) -> u32,
+{
+    fn new(query: T) -> Cacher<T> {
+        Cacher {
+            query,
+            value: None,
+        }
+    }
+
+    // 先查询缓存值 `self.value`，若不存在，则调用 `query` 加载
+    fn value(&mut self, arg: u32) -> u32 {
+        match self.value {
+            Some(v) => v,
+            None => {
+                let v = (self.query)(arg);
+                self.value = Some(v);
+                v
+            }
+        }
+    }
+}
+```
+
+上面的缓存有一个很大的问题：只支持 u32 类型的值，若我们想要缓存 &str 类型，显然就行不通了，因此需要将 u32 替换成泛型 E.
+
