@@ -563,7 +563,23 @@ pub trait FnOnce<Args> {
 
 从源码中还能看出一点：Fn 获取 &self，FnMut 获取 &mut self，而 FnOnce 获取 self。 在实际项目中，建议先使用 Fn 特征，然后编译器会告诉你正误以及该如何选择。
 
+#### 闭包作为函数返回值
 
+对于如何使用闭包作为函数参数，已经很熟悉了，但是如果要使用闭包作为函数返回值，该如何做？
+
+看一个示例:
+```markdown
+fn factory() -> Fn(i32) -> i32 {
+    let num = 5;
+
+    |x| x + num
+}
+
+let f = factory();
+
+let answer = f(1);
+assert_eq!(6, answer);
+```
 
 
 
