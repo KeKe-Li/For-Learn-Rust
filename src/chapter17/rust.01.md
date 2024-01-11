@@ -581,6 +581,71 @@ let answer = f(1);
 assert_eq!(6, answer);
 ```
 
+上面这段代码看起来还是蛮正常的，用 `Fn(i32) -> i32` 特征来代表 `|x| x + num`，非常合理嘛，肯定可以编译通过, 可惜编译器给我们报了一大堆错误，先挑几个重点来看看：
+```markdown
+n factory<T>() -> Fn(i32) -> i32 {
+  |                    ^^^^^^^^^^^^^^ doesn't have a size known at compile-time // 该类型在编译器没有固定的大小
+```
+Rust 要求函数的参数和返回类型，必须有固定的内存大小，例如 i32 就是 4 个字节，引用类型是 8 个字节，总之，绝大部分类型都有固定的大小，但是不包括特征，因为特征类似接口，对于编译器来说，无法知道它后面藏的真实类型是什么，因为也无法得知具体的大小。
+
+同样，我们也无法知道闭包的具体类型，该怎么办呢？再看看报错提示：
+```markdown
+help: use `impl Fn(i32) -> i32` as the return type, as all return paths are of type `[closure@src/main.rs:11:5: 11:21]`, which implements `Fn(i32) -> i32`
+  |
+8 | fn factory<T>() -> impl Fn(i32) -> i32 {
+```
+编译器提示我们加一个 impl 关键字，哦，这样一说，我们可能就想起来了，`impl Trait` 可以用来返回一个实现了指定特征的类型，那么这里 `impl Fn(i32) -> i32` 的返回值形式，说明我们要返回一个闭包类型，它实现了 Fn(i32) -> i32 特征。
+
+完美解决，但是，在特征那一章，我们提到过，`impl Trait` 的返回方式有一个非常大的局限，就是你只能返回同样的类型，例如：
+```markdown
+fn factory(x:i32) -> impl Fn(i32) -> i32 {
+    let num = 5;
+
+    if x > 1{
+        move |x| x + num
+    } else {
+        move |x| x - num
+    }
+}
+```
+运行后，编译器报错：
+```markdown
+error[E0308]: `if` and `else` have incompatible types
+  --> src/main.rs:15:9
+   |
+12 | /     if x > 1{
+13 | |         move |x| x + num
+   | |         ---------------- expected because of this
+14 | |     } else {
+15 | |         move |x| x - num
+   | |         ^^^^^^^^^^^^^^^^ expected closure, found a different closure
+16 | |     }
+   | |_____- `if` and `else` have incompatible types
+   |
+```
+
+提示很清晰：if 和 else 分支中返回了不同的闭包类型，这就很奇怪了，明明这两个闭包长的一样的，之前前面咱们有提到：就算签名一样的闭包，类型也是不同的，因此在这种情况下，就无法再使用 `impl Trait` 的方式去返回闭包。
+
+怎么办？再看看编译器提示，里面有这样一行小字：
+```markdown
+= help: consider boxing your closure and/or using it as a trait object
+```
+
+哦，此时相信我们经恍然大悟，可以用特征对象！只需要用 Box 的方式即可实现：
+```markdown
+fn factory(x:i32) -> Box<dyn Fn(i32) -> i32> {
+    let num = 5;
+
+    if x > 1{
+        Box::new(move |x| x + num)
+    } else {
+        Box::new(move |x| x - num)
+    }
+}
+```
+至此，闭包作为函数返回值就已完美解决.
+
+
 
 
 
