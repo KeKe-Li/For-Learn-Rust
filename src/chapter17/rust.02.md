@@ -87,6 +87,49 @@ pub trait Iterator {
 ```
 迭代器之所以成为迭代器，就是因为实现了 Iterator 特征，要实现该特征，最主要的就是实现其中的 next 方法，该方法控制如何从集合中取值，最终返回值的类型是关联类型 Item。
 
+for 循环通过不停调用迭代器上的 next 方法，来获取迭代器中的元素。
 
+既然 for 可以调用 next 方法,我们来看看一个示例:
+```markdown
+fn main() {
+    let arr = [1, 2, 3];
+    let mut arr_iter = arr.into_iter();
 
+    assert_eq!(arr_iter.next(), Some(1));
+    assert_eq!(arr_iter.next(), Some(2));
+    assert_eq!(arr_iter.next(), Some(3));
+    assert_eq!(arr_iter.next(), None);
+}
+```
+将 arr 转换成迭代器后，通过调用其上的 next 方法，我们获取了 arr 中的元素，有两点需要注意：
+
+* next 方法返回的是 Option 类型，当有值时返回 Some(i32)，无值时返回 None.
+
+* 遍历是按照迭代器中元素的排列顺序依次进行的，因此我们严格按照数组中元素的顺序取出了 Some(1)，Some(2)，Some(3).
+
+* 手动迭代必须将迭代器声明为 mut 可变，因为调用 next 会改变迭代器其中的状态数据（当前遍历的位置等），而 for 循环去迭代则无需标注 mut，因为它会帮我们自动完成.
+
+总之，next 方法对迭代器的遍历是消耗性的，每次消耗它一个元素，最终迭代器中将没有任何元素，只能返回 None。
+
+示例：模拟实现 for 循环
+
+因为 for 循环是迭代器的语法糖，因此我们完全可以通过迭代器来模拟实现它：
+```markdown
+let values = vec![1, 2, 3];
+
+{
+    let result = match IntoIterator::into_iter(values) {
+        mut iter => loop {
+            match iter.next() {
+                Some(x) => { println!("{}", x); },
+                None => break,
+            }
+        },
+    };
+    result
+}
+```
+IntoIterator::into_iter 是使用完全限定的方式去调用 into_iter 方法，这种调用方式跟 values.into_iter() 是等价的。
+
+同时我们使用了 loop 循环配合 next 方法来遍历迭代器中的元素，当迭代器返回 None 时，跳出循环。
 
