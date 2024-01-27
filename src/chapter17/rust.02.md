@@ -133,3 +133,82 @@ IntoIterator::into_iter 是使用完全限定的方式去调用 into_iter 方法
 
 同时我们使用了 loop 循环配合 next 方法来遍历迭代器中的元素，当迭代器返回 None 时，跳出循环。
 
+#### IntoIterator 特征
+
+由于 Vec 动态数组实现了 IntoIterator 特征，因此可以通过 into_iter 将其转换为迭代器，那如果本身就是一个迭代器，该怎么办？
+
+实际上，迭代器自身也实现了 IntoIterator，标准库早就帮我们考虑好了：
+```markdown
+impl<I: Iterator> IntoIterator for I {
+    type Item = I::Item;
+    type IntoIter = I;
+
+    #[inline]
+    fn into_iter(self) -> I {
+        self
+    }
+}
+```
+最终你可以写出这样的代码：
+```markdown
+fn main() {
+    let values = vec![1, 2, 3];
+
+    for v in values.into_iter().into_iter().into_iter() {
+        println!("{}",v)
+    }
+}
+```
+```markdown
+into_iter, iter, iter_mut
+```
+
+在之前的代码中，我们统一使用了 into_iter 的方式将数组转化为迭代器，除此之外，还有 iter 和 iter_mut，这里应该大概能猜到这三者的区别：
+
+* into_iter 会夺走所有权.
+* iter 是借用.
+* iter_mut 是可变借用.
+
+其实如果见多了，你会发现这种问题一眼就能看穿，into_ 之类的，都是拿走所有权，_mut 之类的都是可变借用，剩下的就是不可变借用。
+
+使用一段代码来解释下：
+```markdown
+fn main() {
+    let values = vec![1, 2, 3];
+
+    for v in values.into_iter() {
+        println!("{}", v)
+    }
+
+    // 下面的代码将报错，因为 values 的所有权在上面 `for` 循环中已经被转移走
+    // println!("{:?}",values);
+
+    let values = vec![1, 2, 3];
+    let _values_iter = values.iter();
+
+    // 不会报错，因为 values_iter 只是借用了 values 中的元素
+    println!("{:?}", values);
+
+    let mut values = vec![1, 2, 3];
+    // 对 values 中的元素进行可变借用
+    let mut values_iter_mut = values.iter_mut();
+
+    // 取出第一个元素，并修改为0
+    if let Some(v) = values_iter_mut.next() {
+        *v = 0;
+    }
+
+    // 输出[0, 2, 3]
+    println!("{:?}", values);
+}
+```
+
+具体解释在代码注释中，就不再赘述，不过有两点需要注意的是：
+
+* `.iter()` 方法实现的迭代器，调用 next 方法返回的类型是 `Some(&T)`
+* `.iter_mut()` 方法实现的迭代器，调用 next 方法返回的类型是 `Some(&mut T)`，因此在 `if let Some(v) = values_iter_mut.next()` 中，v 的类型是 `&mut i32`，最终我们可以通过 `*v = 0` 的方式修改其值
+Iterator 和 IntoIterator 的区别
+这两个其实还蛮容易搞混的，但我们只需要记住，Iterator 就是迭代器特征，只有实现了它才能称为迭代器，才能调用 next。
+
+而 IntoIterator 强调的是某一个类型如果实现了该特征，它可以通过 `into_iter`，iter 等方法变成一个迭代器。
+
