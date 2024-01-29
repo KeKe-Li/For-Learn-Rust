@@ -212,3 +212,75 @@ Iterator 和 IntoIterator 的区别
 
 而 IntoIterator 强调的是某一个类型如果实现了该特征，它可以通过 `into_iter`，iter 等方法变成一个迭代器。
 
+#### 消费者与适配器
+
+消费者是迭代器上的方法，它会消费掉迭代器中的元素，然后返回其类型的值，这些消费者都有一个共同的特点：在它们的定义中，都依赖 next 方法来消费元素，因此这也是为什么迭代器要实现 Iterator 特征，而该特征必须要实现 next 方法的原因。
+
+#### 消费者适配器
+
+只要迭代器上的某个方法 A 在其内部调用了 next 方法，那么 A 就被称为消费性适配器：因为 next 方法会消耗掉迭代器上的元素，所以方法 A 的调用也会消耗掉迭代器上的元素。
+
+其中一个例子是 sum 方法，它会拿走迭代器的所有权，然后通过不断调用 next 方法对里面的元素进行求和：
+```markdown
+fn main() {
+    let v1 = vec![1, 2, 3];
+
+    let v1_iter = v1.iter();
+
+    let total: i32 = v1_iter.sum();
+
+    assert_eq!(total, 6);
+
+    // v1_iter 是借用了 v1，因此 v1 可以照常使用
+    println!("{:?}",v1);
+
+    // 以下代码会报错，因为 `sum` 拿到了迭代器 `v1_iter` 的所有权
+    // println!("{:?}",v1_iter);
+}
+```
+
+如代码注释中所说明的：在使用 sum 方法后，我们将无法再使用 `v1_iter`，因为 sum 拿走了该迭代器的所有权：
+```markdown
+fn sum<S>(self) -> S
+    where
+        Self: Sized,
+        S: Sum<Self::Item>,
+    {
+        Sum::sum(self)
+    }
+```
+从 sum 源码中也可以清晰看出，self 类型的方法参数拿走了所有权。
+
+#### 迭代器适配器
+
+既然消费者适配器是消费掉迭代器，然后返回一个值。那么迭代器适配器，顾名思义，会返回一个新的迭代器，这是实现链式方法调用的关键：`v.iter().map().filter()...`。
+
+与消费者适配器不同，迭代器适配器是惰性的，意味着你需要一个消费者适配器来收尾，最终将迭代器转换成一个具体的值：
+```markdown
+let v1: Vec<i32> = vec![1, 2, 3];
+
+v1.iter().map(|x| x + 1);
+```
+运行后输出:
+```markdown
+warning: unused `Map` that must be used
+ --> src/main.rs:4:5
+  |
+4 |     v1.iter().map(|x| x + 1);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_must_use)]` on by default
+  = note: iterators are lazy and do nothing unless consumed // 迭代器 map 是惰性的，这里不产生任何效果
+```
+如上述中文注释所说，这里的 map 方法是一个迭代者适配器，它是惰性的，不产生任何行为，因此我们还需要一个消费者适配器进行收尾：
+```markdown
+let v1: Vec<i32> = vec![1, 2, 3];
+
+let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
+
+assert_eq!(v2, vec![2, 3, 4]);
+```
+
+
+
+
