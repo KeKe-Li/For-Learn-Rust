@@ -280,6 +280,47 @@ let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
 
 assert_eq!(v2, vec![2, 3, 4]);
 ```
+#### collect
+
+上面代码中，使用了 collect 方法，该方法就是一个消费者适配器，使用它可以将一个迭代器中的元素收集到指定类型中，这里我们为 v2 标注了 `Vec<_>` 类型，就是为了告诉 collect：请把迭代器中的元素消费掉，然后把值收集成 Vec<_> 类型，至于为何使用 _，因为编译器会帮我们自动推导。
+
+为何 collect 在消费时要指定类型？是因为该方法其实很强大，可以收集成多种不同的集合类型，`Vec<T>` 仅仅是其中之一，因此我们必须显式的告诉编译器我们想要收集成的集合类型。
+
+还有一点值得注意，map 会对迭代器中的每一个值进行一系列操作，然后把该值转换成另外一个新值，该操作是通过闭包 `|x| x + 1` 来完成：最终迭代器中的每个值都增加了 1，从 `[1, 2, 3]` 变为 `[2, 3, 4]`。
+
+再来看看如何使用 collect 收集成 HashMap 集合：
+```markdown
+use std::collections::HashMap;
+fn main() {
+    let names = ["sunface", "sunfei"];
+    let ages = [18, 18];
+    let folks: HashMap<_, _> = names.into_iter().zip(ages.into_iter()).collect();
+
+    println!("{:?}",folks);
+}
+```
+zip 是一个迭代器适配器，它的作用就是将两个迭代器的内容压缩到一起，形成 `Iterator<Item=(ValueFromA, ValueFromB)>` 这样的新的迭代器，在此处就是形如 `[(name1, age1), (name2, age2)]` 的迭代器。
+
+然后再通过 collect 将新迭代器中(K, V) 形式的值收集成 `HashMap<K, V>`，同样的，这里必须显式声明类型，然后 HashMap 内部的 KV 类型可以交给编译器去推导，最终编译器会推导出 `HashMap<&str, i32>`，完全正确！
+
+#### 闭包作为适配器参数
+
+之前的 map 方法中，我们使用闭包来作为迭代器适配器的参数，它最大的好处不仅在于可以就地实现迭代器中元素的处理，还在于可以捕获环境值：
+
+```markdown
+struct Shoe {
+    size: u32,
+    style: String,
+}
+
+fn shoes_in_size(shoes: Vec<Shoe>, shoe_size: u32) -> Vec<Shoe> {
+    shoes.into_iter().filter(|s| s.size == shoe_size).collect()
+}
+```
+
+filter 是迭代器适配器，用于对迭代器中的每个值进行过滤。 它使用闭包作为参数，该闭包的参数 s 是来自迭代器中的值，然后使用 s 跟外部环境中的 shoe_size 进行比较，若相等，则在迭代器中保留 s 值，若不相等，则从迭代器中剔除 s 值，最终通过 collect 收集为 `Vec<Shoe>` 类型。
+
+
 
 
 
