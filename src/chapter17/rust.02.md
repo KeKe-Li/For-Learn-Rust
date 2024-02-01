@@ -320,8 +320,94 @@ fn shoes_in_size(shoes: Vec<Shoe>, shoe_size: u32) -> Vec<Shoe> {
 
 filter 是迭代器适配器，用于对迭代器中的每个值进行过滤。 它使用闭包作为参数，该闭包的参数 s 是来自迭代器中的值，然后使用 s 跟外部环境中的 shoe_size 进行比较，若相等，则在迭代器中保留 s 值，若不相等，则从迭代器中剔除 s 值，最终通过 collect 收集为 `Vec<Shoe>` 类型。
 
+#### 实现 Iterator 特征
 
+之前一直基于数组来创建迭代器，实际上，不仅仅是数组，基于其它集合类型一样可以创建迭代器，例如 HashMap。 你也可以创建自己的迭代器 —— 只要为自定义类型实现 Iterator 特征即可。
 
+首先，创建一个计数器：
+```markdown
+struct Counter {
+    count: u32,
+}
 
+impl Counter {
+    fn new() -> Counter {
+        Counter { count: 0 }
+    }
+}
+```
+这里为计数器 Counter 实现了一个关联函数 new，用于创建新的计数器实例。下面我们继续为计数器实现 Iterator 特征：
+```markdown
+impl Iterator for Counter {
+    type Item = u32;
 
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.count < 5 {
+            self.count += 1;
+            Some(self.count)
+        } else {
+            None
+        }
+    }
+}
+```
+首先，将该特征的关联类型设置为 u32，由于我们的计数器保存的 count 字段就是 u32 类型， 因此在 next 方法中，最后返回的是实际上是 `Option<u32>` 类型。
 
+每次调用 next 方法，都会让计数器的值加一，然后返回最新的计数值，一旦计数大于 5，就返回 None。
+
+最后，使用我们新建的 Counter 进行迭代：
+```markdown
+ let mut counter = Counter::new();
+
+assert_eq!(counter.next(), Some(1));
+assert_eq!(counter.next(), Some(2));
+assert_eq!(counter.next(), Some(3));
+assert_eq!(counter.next(), Some(4));
+assert_eq!(counter.next(), Some(5));
+assert_eq!(counter.next(), None);
+```
+#### 实现 Iterator 特征的其它方法
+
+可以看出，实现自己的迭代器非常简单，但是 Iterator 特征中，不仅仅是只有 next 一个方法，那为什么我们只需要实现它呢？
+
+因为其它方法都具有默认实现，所以无需像 next 这样手动去实现，而且这些默认实现的方法其实都是基于 next 方法实现的。
+
+示例使用：
+```markdown
+let sum: u32 = Counter::new().zip(Counter::new().skip(1)).map(|(a, b)| a * b).filter(|x| x % 3 == 0).sum();
+assert_eq!(18, sum);
+```
+其中 zip，map，filter 是迭代器适配器：
+
+* zip 把两个迭代器合并成一个迭代器，新迭代器中，每个元素都是一个元组，由之前两个迭代器的元素组成。例如将形如 `[1, 2, 3, 4, 5]` 和 `[2, 3, 4, 5]` 的迭代器合并后，新的迭代器形如 [(1, 2),(2, 3),(3, 4),(4, 5)]
+* map 是将迭代器中的值经过映射后，转换成新的值`[2, 6, 12, 20]`
+* filter 对迭代器中的元素进行过滤，若闭包返回 true 则保留元素`[6, 12]`，反之剔除
+
+而 sum 是消费者适配器，对迭代器中的所有元素求和，最终返回一个 u32 值 18。
+
+* enumerate
+
+在流程控制时,针对 for 循环，我们提供了一种方法可以获取迭代时的索引：
+
+```markdown
+let v = vec![1u64, 2, 3, 4, 5, 6];
+for (i,v) in v.iter().enumerate() {
+    println!("第{}个值是{}",i,v)
+}
+```
+初看之时，不知道为什么要这么复杂才能获取到索引，但是看完这里之后，你就有了全新的理解，首先 `v.iter()` 创建迭代器，其次 调用 `Iterator` 特征上的方法 `enumerate`，该方法产生一个新的迭代器，其中每个元素均是元组 (索引，值)。
+
+因为 enumerate 是迭代器适配器，因此我们可以对它返回的迭代器调用其它 Iterator 特征方法：
+```markdown
+let v = vec![1u64, 2, 3, 4, 5, 6];
+let val = v.iter()
+    .enumerate()
+    // 每两个元素剔除一个
+    // [1, 3, 5]
+    .filter(|&(idx, _)| idx % 2 == 0)
+    .map(|(_, val)| val)
+    // 累加 1+3+5 = 9
+    .fold(0u64, |sum, acm| sum + acm);
+
+println!("{}", val);
+```
