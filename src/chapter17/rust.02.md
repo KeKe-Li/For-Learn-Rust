@@ -411,3 +411,73 @@ let val = v.iter()
 
 println!("{}", val);
 ```
+#### 迭代器的性能
+
+要完成集合遍历，既可以使用 for 循环也可以使用迭代器，那么二者之间该怎么选择呢，性能有多大差距呢？
+
+理论分析不会有结果，直接测试最为靠谱：
+```markdown
+#![feature(test)]
+
+extern crate rand;
+extern crate test;
+
+fn sum_for(x: &[f64]) -> f64 {
+    let mut result: f64 = 0.0;
+    for i in 0..x.len() {
+        result += x[i];
+    }
+    result
+}
+
+fn sum_iter(x: &[f64]) -> f64 {
+    x.iter().sum::<f64>()
+}
+
+#[cfg(test)]
+mod bench {
+    use test::Bencher;
+    use rand::{Rng,thread_rng};
+    use super::*;
+
+    const LEN: usize = 1024*1024;
+
+    fn rand_array(cnt: u32) -> Vec<f64> {
+        let mut rng = thread_rng();
+        (0..cnt).map(|_| rng.gen::<f64>()).collect()
+    }
+
+    #[bench]
+    fn bench_for(b: &mut Bencher) {
+        let samples = rand_array(LEN as u32);
+        b.iter(|| {
+            sum_for(&samples)
+        })
+    }
+
+    #[bench]
+    fn bench_iter(b: &mut Bencher) {
+        let samples = rand_array(LEN as u32);
+        b.iter(|| {
+            sum_iter(&samples)
+        })
+    }
+}
+```
+
+这里的代码对比了 for 循环和迭代器 iterator 完成同样的求和任务的性能对比，可以看到迭代器还要更快一点。
+
+```markdown
+test bench::bench_for  ... bench:     998,331 ns/iter (+/- 36,250)
+test bench::bench_iter ... bench:     983,858 ns/iter (+/- 44,673)
+```
+迭代器是 Rust 的 零成本抽象（zero-cost abstractions）之一，意味着抽象并不会引入运行时开销，这与 `Bjarne Stroustrup`（C++ 的设计和实现者）在 `Foundations of C++（2012）` 中所定义的 零开销（zero-overhead）如出一辙：
+```markdown
+In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
+
+一般来说，C++的实现遵循零开销原则：没有使用时，你不必为其买单。 更进一步说，需要使用时，你也无法写出更优的代码了。 
+```
+总之，迭代器是 Rust 受函数式语言启发而提供的高级语言特性，可以写出更加简洁、逻辑清晰的代码。编译器还可以通过循环展开（Unrolling）、向量化、消除边界检查等优化手段，使得迭代器和 for 循环都有极为高效的执行效率。
+
+所以请放心大胆的使用迭代器，在获得更高的表达力的同时，也不会导致运行时的损失，何乐而不为呢！
+
