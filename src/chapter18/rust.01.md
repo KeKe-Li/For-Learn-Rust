@@ -68,3 +68,25 @@ assert_eq!(values[1], 3);
 强制类型转换的边角知识:
 
 * 转换不具有传递性 就算 `e as U1 as U2` 是合法的，也不能说明 `e as U2` 是合法的（e 不能直接转换成 U2）。
+
+#### TryInto 转换
+
+在一些场景中，使用 as 关键字会有比较大的限制。如果你想要在类型转换上拥有完全的控制而不依赖内置的转换，例如处理转换错误，那么可以使用 TryInto ：
+```markdown
+use std::convert::TryInto;
+
+fn main() {
+   let a: u8 = 10;
+   let b: u16 = 1500;
+
+   let b_: u8 = b.try_into().unwrap();
+
+   if a < b_ {
+     println!("Ten is less than one hundred.");
+   }
+}
+```
+
+上面代码中引入了 `std::convert::TryInto` 特征，但是却没有使用它，可能大家为此困惑，主要原因在于如果你要使用一个特征的方法，那么你需要引入该特征到当前的作用域中，我们在上面用到了 try_into 方法，因此需要引入对应的特征。
+
+但是 Rust 又提供了一个非常便利的办法，把最常用的标准库中的特征通过`std::prelude`模块提前引入到当前作用域中，其中包括了 `std::convert::TryInto`，你可以尝试删除第一行的代码 `use ...`，看看是否会报错。
