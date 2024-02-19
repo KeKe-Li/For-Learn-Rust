@@ -110,3 +110,56 @@ fn main() {
 
 运行后输出如下 `"out of range integral type conversion attempted"`，在这里我们程序捕获了错误，编译器告诉我们类型范围超出的转换是不被允许的，因为我们试图把 `1500_i16` 转换为 u8 类型，后者明显不足以承载这么大的值。
 
+#### 通用类型转换
+
+虽然 as 和 TryInto 很强大，但是只能应用在数值类型上，可是 Rust 有如此多的类型，想要为这些类型实现转换，我们需要看看其中一个办法，将一个结构体转换为另外一个结构体：
+```markdown
+struct Foo {
+    x: u32,
+    y: u16,
+}
+
+struct Bar {
+    a: u32,
+    b: u16,
+}
+
+fn reinterpret(foo: Foo) -> Bar {
+    let Foo { x, y } = foo;
+    Bar { a: x, b: y }
+}
+```
+
+简单粗暴，但是从另外一个角度来看，也挺麻烦的，好在 Rust 为我们提供了更通用的方式来完成这个目的。
+
+#### 强制类型转换
+
+在某些情况下，类型是可以进行隐式强制转换的，虽然这些转换弱化了 Rust 的类型系统，但是它们的存在是为了让 Rust 在大多数场景可以工作，其实就是未来帮助用户省事，而不是报各种类型上的编译错误。
+
+首先，在匹配特征时，不会做任何强制转换(除了方法)。一个类型 T 可以强制转换为 U，不代表 `impl T` 可以强制转换为 `impl U`，例如下面的代码就无法通过编译检查：
+```markdown
+trait Trait {}
+
+fn foo<X: Trait>(t: X) {}
+
+impl<'a> Trait for &'a i32 {}
+
+fn main() {
+    let t: &mut i32 = &mut 0;
+    foo(t);
+}
+```
+报错如下：
+```markdown
+error[E0277]: the trait bound `&mut i32: Trait` is not satisfied
+--> src/main.rs:9:9
+|
+9 |     foo(t);
+|         ^ the trait `Trait` is not implemented for `&mut i32`
+|
+= help: the following implementations were found:
+        <&'a i32 as Trait>
+= note: `Trait` is implemented for `&i32`, but not for `&mut i32`
+```
+
+`&i32` 实现了特征 Trait， `&mut i32` 可以转换为 `&i32`，但是 `&mut i32` 依然无法作为 Trait 来使用。
