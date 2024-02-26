@@ -267,4 +267,47 @@ impl<T> Clone for Container<T> {
 4. 变形为一个未指定生命周期的引用会导致无界生命周期
 5. 在复合类型之间互相变换时，你需要保证它们的排列布局是一模一样的！一旦不一样，那么字段就会得到不可预期的值，这也是未定义的行为！
 ```
+对于第 5 条，其实我们该如何知道内存的排列布局是一样的呢？对于 repr(C) 类型和 repr(transparent) 类型来说，它们的布局是有着精确定义的。
+
+但是对于你自己的"普通却自信"的 Rust 类型 repr(Rust) 来说，它可不是有着精确定义的。甚至同一个泛型类型的不同实例都可以有不同的内存布局。 `Vec<i32>` 和 `Vec<u32>` 它们的字段可能有着相同的顺序，也可能没有。
+
+对于数据排列布局来说，什么能保证，什么不能保证目前还在 Rust 开发组的工作任务中呢。
+
+你以为你之前凝视的是深渊吗？不，你凝视的只是深渊的大门。 `mem::transmute_copy<T, U>` 才是真正的深渊，它比之前的还要更加危险和不安全。它从 T 类型中拷贝出 U 类型所需的字节数，然后转换成 U。 
+
+`mem::transmute` 尚有大小检查，能保证两个数据的内存大小一致，现在这哥们干脆连这个也丢了，只不过 U 的尺寸若是比 T 大，会是一个未定义行为。
+
+当然，你也可以通过裸指针转换和 unions (todo!)获得所有的这些功能，但是你将无法获得任何编译提示或者检查。裸指针转换和 unions 也不是魔法，无法逃避上面说的规则。
+
+transmute 虽然危险，但作为一本工具书，知识当然要全面，下面列举两个有用的 transmute 应用场景 `:)`。
+
+* 将裸指针变成函数指针：
+```markdown
+fn foo() -> i32 {
+    0
+}
+
+let pointer = foo as *const ();
+let function = unsafe { 
+    // 将裸指针转换为函数指针
+    std::mem::transmute::<*const (), fn() -> i32>(pointer) 
+};
+assert_eq!(function(), 0);
+```
+
+* 延长生命周期，或者缩短一个静态生命周期寿命：
+```markdown
+struct R<'a>(&'a i32);
+
+// 将 'b 生命周期延长至 'static 生命周期
+unsafe fn extend_lifetime<'b>(r: R<'b>) -> R<'static> {
+    std::mem::transmute::<R<'b>, R<'static>>(r)
+}
+
+// 将 'static 生命周期缩短至 'c 生命周期
+unsafe fn shorten_invariant_lifetime<'b, 'c>(r: &'b mut R<'static>) -> &'b mut R<'c> {
+    std::mem::transmute::<&'b mut R<'static>, &'b mut R<'c>>(r)
+}
+```
+
 
