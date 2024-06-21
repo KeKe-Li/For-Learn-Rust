@@ -123,6 +123,32 @@ Cargo 安装依赖，使用 cargo 可以方便的安装依赖，可以在 `crate
 
 cargo在创建项目的时候，cargo 默认就创建 bin 类型的项目，Rust 项目主要分为两个类型：bin 和 lib，前者是一个可运行的项目，后者是一个依赖库项目。
 
+如果rust中检查依赖包，需要添加可以使用cargo add命令添加
+
+示例：
+```markdown
+> cargo add serde serde_json
+      Adding serde v1.0.202 to dependencies.
+             Features:
+             + std
+             - alloc
+             - derive
+             - rc
+             - serde_derive
+             - unstable
+      Adding serde_json v1.0.117 to dependencies.
+             Features:
+             + std
+             - alloc
+             - arbitrary_precision
+             - float_roundtrip
+             - indexmap
+             - preserve_order
+             - raw_value
+             - unbounded_depth
+```
+
+
 #### 运行项目
 
 有两种方式可以运行项目：
