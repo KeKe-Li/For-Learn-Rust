@@ -128,24 +128,24 @@ cargo在创建项目的时候，cargo 默认就创建 bin 类型的项目，Rust
 示例：
 ```markdown
 > cargo add serde serde_json
-      Adding serde v1.0.202 to dependencies.
-             Features:
-             + std
-             - alloc
-             - derive
-             - rc
-             - serde_derive
-             - unstable
-      Adding serde_json v1.0.117 to dependencies.
-             Features:
-             + std
-             - alloc
-             - arbitrary_precision
-             - float_roundtrip
-             - indexmap
-             - preserve_order
-             - raw_value
-             - unbounded_depth
+Adding serde v1.0.202 to dependencies.
+       Features:
+       + std
+       - alloc
+       - derive
+       - rc
+       - serde_derive
+       - unstable
+Adding serde_json v1.0.117 to dependencies.
+       Features:
+       + std
+       - alloc
+       - arbitrary_precision
+       - float_roundtrip
+       - indexmap
+       - preserve_order
+       - raw_value
+       - unbounded_depth
 ```
 
 
@@ -157,9 +157,9 @@ cargo在创建项目的时候，cargo 默认就创建 bin 类型的项目，Rust
 
 ```markdown
 > sudo cargo run main.rs
-    Blocking waiting for file lock on package cache
-    Finished dev [unoptimized + debuginfo] target(s) in 48.02s
-     Running `/Users/keke/rust/step/target/debug/step main.rs`
+Blocking waiting for file lock on package cache
+Finished dev [unoptimized + debuginfo] target(s) in 48.02s
+ Running `/Users/keke/rust/step/target/debug/step main.rs`
 hello rust
 ```
 
@@ -195,6 +195,7 @@ hello, rust!
 #### cargo check
 
 `cargo check` 是我们在代码开发过程中最常用的命令，它的作用很简单：快速的检查一下代码能否编译通过。因此该命令速度会非常快，能节省大量的编译时间。
+
 ```markdown
 > cargo check         
 Checking hello_rust v0.1.0 (/Users/keke/rust/hello_rust)
