@@ -262,7 +262,6 @@ registry = "git://mirrors.ustc.edu.cn/crates.io-index"
 ```
 首先，创建一个新的镜像源 `[source.ustc]`，然后将默认的 `crates-io` 替换成新的镜像源: `replace-with = 'ustc'`。
 
-
 #### Rust核心特性
 
 * 内存安全
