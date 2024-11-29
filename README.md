@@ -217,7 +217,7 @@ package 中记录了项目的描述信息，典型的如下：
 [package]
 name = "hello_rust"
 version = "0.1.0"
-edition = "202w"
+edition = "2021"
 ```
 `name` 字段定义了项目名称，
 `version` 字段定义当前版本，新项目默认是 0.1.0，edition 字段定义了我们使用的 Rust 大版本。
